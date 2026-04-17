@@ -38,9 +38,11 @@ export const Hero = () => {
           </p>
 
           <div className="reveal reveal-delay-3 mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button variant="luminous" size="lg" className="group">
-              Connect wallet
-              <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+            <Button variant="luminous" size="lg" className="group" asChild>
+              <Link to="/app">
+                Launch app
+                <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </Button>
             <Button variant="glass" size="lg" asChild>
               <Link to="/simulator">Try the simulator</Link>

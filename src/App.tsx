@@ -8,6 +8,12 @@ import FeaturesPage from "./pages/FeaturesPage.tsx";
 import SimulatorPage from "./pages/SimulatorPage.tsx";
 import HowItWorksPage from "./pages/HowItWorksPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import DashboardPage from "./pages/app/DashboardPage.tsx";
+import PositionsPage from "./pages/app/PositionsPage.tsx";
+import AlertsPage from "./pages/app/AlertsPage.tsx";
+import RebalancePage from "./pages/app/RebalancePage.tsx";
+import SettingsPage from "./pages/app/SettingsPage.tsx";
+import AppSimulatorPage from "./pages/app/AppSimulatorPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +28,12 @@ const App = () => (
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/simulator" element={<SimulatorPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/app" element={<DashboardPage />} />
+          <Route path="/app/positions" element={<PositionsPage />} />
+          <Route path="/app/alerts" element={<AlertsPage />} />
+          <Route path="/app/rebalance" element={<RebalancePage />} />
+          <Route path="/app/simulator" element={<AppSimulatorPage />} />
+          <Route path="/app/settings" element={<SettingsPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
