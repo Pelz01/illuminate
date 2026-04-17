@@ -69,7 +69,9 @@ export const SiteNav = () => {
           <Button variant="ghost" size="sm" asChild>
             <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
           </Button>
-          <Button variant="luminous" size="sm">Launch app</Button>
+          <Button variant="luminous" size="sm" asChild>
+            <Link to="/app">Launch app</Link>
+          </Button>
         </div>
 
         <button
@@ -99,7 +101,9 @@ export const SiteNav = () => {
                 {l.label}
               </RouterNavLink>
             ))}
-            <Button variant="luminous" className="mt-2">Launch app</Button>
+            <Button variant="luminous" className="mt-2" asChild>
+              <Link to="/app">Launch app</Link>
+            </Button>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const CallToAction = () => (
   <section className="relative py-32">
@@ -17,10 +18,14 @@ export const CallToAction = () => (
           Connect your TON wallet. See every position, every IL number, every alert — in under ten seconds.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Button variant="luminous" size="xl" className="group">
-            Connect TON wallet <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+          <Button variant="luminous" size="xl" className="group" asChild>
+            <Link to="/app">
+              Launch app <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </Button>
-          <Button variant="glass" size="xl">Watch 60s demo</Button>
+          <Button variant="glass" size="xl" asChild>
+            <Link to="/how-it-works">See how it works</Link>
+          </Button>
         </div>
         <p className="mt-6 text-xs text-muted-foreground/70 font-mono">Non-custodial · TonConnect · No sign-up</p>
       </div>
