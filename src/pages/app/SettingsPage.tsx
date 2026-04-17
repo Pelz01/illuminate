@@ -4,11 +4,38 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Copy, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
+import { toast } from "@/components/ui/use-toast";
 
 const SettingsPage = () => {
   const [theme] = useState("Midnight");
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [advanced, setAdvanced] = useState(false);
+  const { connected, address, shortAddress, connect, disconnect } =
+    useTonWalletSession();
+
+  const handleCopyAddress = async () => {
+    if (!address) return;
+
+    await navigator.clipboard.writeText(address);
+    toast({
+      title: "Address copied",
+      description: "TON wallet address copied to clipboard.",
+    });
+  };
+
+  const handleDisconnect = async () => {
+    if (!connected) {
+      connect();
+      return;
+    }
+
+    await disconnect();
+    toast({
+      title: "Wallet disconnected",
+      description: "TonConnect session has been cleared.",
+    });
+  };
 
   return (
     <AppLayout title="Settings" subtitle="Wallet, display preferences, and data sources.">
@@ -17,15 +44,24 @@ const SettingsPage = () => {
           <div className="rounded-xl border border-border/60 bg-background/40 p-4">
             <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-mono">Connected address</div>
             <div className="mt-2 flex items-center justify-between">
-              <span className="font-mono text-sm">EQAb9X…k4Ld7sJp</span>
-              <button className="text-muted-foreground hover:text-primary" aria-label="Copy">
+              <span className="font-mono text-sm">{connected ? shortAddress : "Not connected"}</span>
+              <button
+                className="text-muted-foreground hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Copy"
+                onClick={handleCopyAddress}
+                disabled={!connected}
+              >
                 <Copy className="h-4 w-4" />
               </button>
             </div>
-            <div className="mt-3 text-xs text-muted-foreground">Connected via TonConnect · Non-custodial</div>
+            <div className="mt-3 text-xs text-muted-foreground">
+              {connected
+                ? "Connected via TonConnect · Non-custodial"
+                : "Connect your TON wallet via TonConnect."}
+            </div>
           </div>
-          <Button variant="glass" className="w-full">
-            <LogOut className="h-4 w-4" /> Disconnect wallet
+          <Button variant="glass" className="w-full" onClick={handleDisconnect}>
+            <LogOut className="h-4 w-4" /> {connected ? "Disconnect wallet" : "Connect wallet"}
           </Button>
         </Card>
 

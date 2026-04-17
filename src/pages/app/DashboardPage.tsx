@@ -1,31 +1,86 @@
 import AppLayout from "@/components/app/AppLayout";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowUpRight, BellRing, Repeat, TrendingUp, TrendingDown } from "lucide-react";
-
-const positions = [
-  { pair: "TON / USDT", value: 12847.2, il: -386.5, ilPct: -3.0, fees: 1204.8, net: 818.7, apy: 18.4, status: "outperform" },
-  { pair: "TON / NOT", value: 6420.0, il: -812.4, ilPct: -12.6, fees: 980.1, net: 167.7, apy: 42.1, status: "watch" },
-  { pair: "USDT / DOGS", value: 3210.6, il: -640.2, ilPct: -19.9, fees: 412.0, net: -228.2, apy: 64.0, status: "exit" },
-];
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BellRing,
+  Repeat,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
+import { useStonWalletPositions } from "@/hooks/use-ston-wallet-positions";
 
 const DashboardPage = () => {
-  const totalValue = positions.reduce((s, p) => s + p.value, 0);
-  const totalIL = positions.reduce((s, p) => s + p.il, 0);
-  const totalFees = positions.reduce((s, p) => s + p.fees, 0);
-  const totalNet = totalIL + totalFees;
+  const { connected, address, connect } = useTonWalletSession();
+  const { data: positions = [], isLoading } = useStonWalletPositions(address);
+
+  const positionsWithValue = positions.filter(
+    (position) => position.valueUsd !== null
+  );
+  const totalValue = positionsWithValue.reduce(
+    (sum, position) => sum + (position.valueUsd ?? 0),
+    0
+  );
+
+  const hasPortfolioValue = positionsWithValue.length > 0;
+  const totalIL = null;
+  const totalFees = null;
+  const totalNet = null;
+
+  const dashboardPositions = [...positions].sort((a, b) => {
+    const aValue = a.valueUsd ?? -1;
+    const bValue = b.valueUsd ?? -1;
+    return bValue - aValue;
+  });
 
   return (
     <AppLayout
       title="Welcome back"
-      subtitle="Here's the honest picture of every LP position you hold on STON.fi — live, on-chain, no estimates."
+      subtitle="Live STON.fi wallet pools from on-chain API endpoints."
     >
+      {!connected && (
+        <div className="glass-card rounded-2xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="font-serif-display text-2xl">Connect wallet</div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Connect your TON wallet to load live STON.fi liquidity positions.
+            </p>
+          </div>
+          <Button variant="luminous" onClick={connect}>
+            Connect wallet
+          </Button>
+        </div>
+      )}
+
       {/* KPI Row */}
       <div className="grid gap-4 md:grid-cols-4">
-        <KPI label="Portfolio value" value={fmt(totalValue)} sub="3 active positions" tone="neutral" />
-        <KPI label="Impermanent loss" value={fmt(totalIL)} sub={`${((totalIL / totalValue) * 100).toFixed(2)}%`} tone="bad" />
-        <KPI label="Fees earned" value={fmt(totalFees)} sub="last 30 days" tone="good" />
-        <KPI label="Net return" value={fmt(totalNet)} sub={totalNet >= 0 ? "vs hold +6.4%" : "vs hold −2.1%"} tone={totalNet >= 0 ? "good" : "bad"} highlight />
+        <KPI
+          label="Portfolio value"
+          value={hasPortfolioValue ? fmt(totalValue) : "--"}
+          sub={`${positions.length} active position${positions.length === 1 ? "" : "s"}`}
+          tone="neutral"
+        />
+        <KPI
+          label="Impermanent loss"
+          value={totalIL === null ? "--" : fmt(totalIL)}
+          sub="Not provided by /wallets/{address}/pools"
+          tone="neutral"
+        />
+        <KPI
+          label="Fees earned"
+          value={totalFees === null ? "--" : fmt(totalFees)}
+          sub="Not provided by /wallets/{address}/pools"
+          tone="neutral"
+        />
+        <KPI
+          label="Net return"
+          value={totalNet === null ? "--" : fmt(totalNet)}
+          sub="Pending explicit IL/fees model"
+          tone="neutral"
+          highlight
+        />
       </div>
 
       {/* Hold vs LP chart */}
@@ -33,15 +88,25 @@ const DashboardPage = () => {
         <div className="glass-card rounded-3xl p-6 md:p-8">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Hold vs LP · 30 days</div>
-              <div className="mt-1 font-serif-display text-2xl">Your LP is outperforming hold by <span className="text-gradient-amber">+6.4%</span></div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Live data status
+              </div>
+              <div className="mt-1 font-serif-display text-2xl">
+                {isLoading
+                  ? "Loading STON.fi wallet positions..."
+                  : connected
+                  ? "Wallet pools loaded from /v1/wallets/{address}/pools"
+                  : "Connect wallet to start live position tracking"}
+              </div>
             </div>
             <div className="hidden sm:flex gap-2">
               {["7D", "30D", "90D", "ALL"].map((t, i) => (
                 <button
                   key={t}
                   className={`rounded-full px-3 py-1 text-xs font-mono transition-colors ${
-                    i === 1 ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                    i === 1
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {t}
@@ -51,8 +116,12 @@ const DashboardPage = () => {
           </div>
           <BigChart />
           <div className="mt-4 flex flex-wrap gap-6 text-xs">
-            <Legend color="hsl(var(--primary))" label="LP position" />
-            <Legend color="hsl(var(--muted-foreground))" label="Hold scenario" dashed />
+            <Legend color="hsl(var(--primary))" label="LP position (visual placeholder)" />
+            <Legend
+              color="hsl(var(--muted-foreground))"
+              label="Hold scenario (pending model)"
+              dashed
+            />
           </div>
         </div>
 
@@ -60,15 +129,15 @@ const DashboardPage = () => {
         <div className="space-y-4">
           <ActionCard
             icon={BellRing}
-            title="2 alerts active"
-            body="USDT / DOGS just crossed your 15% net loss threshold."
+            title="Alerts module ready"
+            body="Alert thresholds are configurable. Live IL-based triggering is pending explicit fee/IL model."
             cta="Review alerts"
             to="/app/alerts"
           />
           <ActionCard
             icon={Repeat}
-            title="Suggested rebalance"
-            body="Exit USDT / DOGS, redeploy into TON / USDT. +$412 projected over 30d."
+            title="Rebalance module ready"
+            body="Execution flow is wired. Route and optimization logic will use live positions in the next step."
             cta="Open rebalance"
             to="/app/rebalance"
             highlight
@@ -80,11 +149,15 @@ const DashboardPage = () => {
       <div className="mt-10">
         <div className="flex items-end justify-between mb-5">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-primary/90 font-mono">Active positions</div>
+            <div className="text-xs uppercase tracking-[0.2em] text-primary/90 font-mono">
+              Active positions
+            </div>
             <h2 className="mt-2 font-serif-display text-3xl">Live from STON.fi</h2>
           </div>
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/app/positions">All positions <ArrowRight /></Link>
+            <Link to="/app/positions">
+              All positions <ArrowRight />
+            </Link>
           </Button>
         </div>
 
@@ -97,9 +170,23 @@ const DashboardPage = () => {
             <span className="text-right">Net</span>
             <span className="w-24 text-right">Status</span>
           </div>
-          {positions.map((p) => (
-            <PositionRow key={p.pair} {...p} />
-          ))}
+
+          {isLoading && (
+            <div className="px-6 py-5 text-sm text-muted-foreground">
+              Loading wallet positions...
+            </div>
+          )}
+
+          {!isLoading && connected && dashboardPositions.length === 0 && (
+            <div className="px-6 py-5 text-sm text-muted-foreground">
+              No STON.fi liquidity positions found for this wallet.
+            </div>
+          )}
+
+          {!isLoading &&
+            dashboardPositions.map((position) => (
+              <PositionRow key={position.poolAddress} position={position} />
+            ))}
         </div>
       </div>
     </AppLayout>
@@ -107,53 +194,124 @@ const DashboardPage = () => {
 };
 
 const fmt = (n: number) =>
-  `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  `${n < 0 ? "-" : ""}$${Math.abs(n).toLocaleString(undefined, {
+    maximumFractionDigits: 0,
+  })}`;
 
-const KPI = ({ label, value, sub, tone, highlight }: { label: string; value: string; sub: string; tone: "good" | "bad" | "neutral"; highlight?: boolean }) => (
-  <div className={`relative rounded-2xl p-6 ${highlight ? "glass-card border border-primary/30" : "glass-card"}`}>
-    {highlight && <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-primary/30 to-transparent opacity-50 blur -z-10" />}
-    <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
-    <div className={`mt-2 font-serif-display text-3xl ${tone === "good" ? "text-success" : tone === "bad" ? "text-destructive" : "text-foreground"}`}>
+const KPI = ({
+  label,
+  value,
+  sub,
+  tone,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  tone: "good" | "bad" | "neutral";
+  highlight?: boolean;
+}) => (
+  <div
+    className={`relative rounded-2xl p-6 ${
+      highlight ? "glass-card border border-primary/30" : "glass-card"
+    }`}
+  >
+    {highlight && (
+      <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-primary/30 to-transparent opacity-50 blur -z-10" />
+    )}
+    <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+      {label}
+    </div>
+    <div
+      className={`mt-2 font-serif-display text-3xl ${
+        tone === "good"
+          ? "text-success"
+          : tone === "bad"
+          ? "text-destructive"
+          : "text-foreground"
+      }`}
+    >
       {value}
     </div>
     <div className="mt-1 text-xs font-mono text-muted-foreground/80">{sub}</div>
   </div>
 );
 
-const Legend = ({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) => (
+const Legend = ({
+  color,
+  label,
+  dashed,
+}: {
+  color: string;
+  label: string;
+  dashed?: boolean;
+}) => (
   <div className="flex items-center gap-2 text-muted-foreground">
     <span
       className="h-0.5 w-6"
-      style={{ background: dashed ? `repeating-linear-gradient(90deg, ${color}, ${color} 3px, transparent 3px, transparent 6px)` : color }}
+      style={{
+        background: dashed
+          ? `repeating-linear-gradient(90deg, ${color}, ${color} 3px, transparent 3px, transparent 6px)`
+          : color,
+      }}
     />
     {label}
   </div>
 );
 
-const ActionCard = ({ icon: Icon, title, body, cta, to, highlight }: { icon: typeof BellRing; title: string; body: string; cta: string; to: string; highlight?: boolean }) => (
+const ActionCard = ({
+  icon: Icon,
+  title,
+  body,
+  cta,
+  to,
+  highlight,
+}: {
+  icon: typeof BellRing;
+  title: string;
+  body: string;
+  cta: string;
+  to: string;
+  highlight?: boolean;
+}) => (
   <Link
     to={to}
-    className={`group block rounded-2xl p-6 transition-all hover:-translate-y-0.5 ${highlight ? "glass-card border border-primary/30" : "glass-card"}`}
+    className={`group block rounded-2xl p-6 transition-all hover:-translate-y-0.5 ${
+      highlight ? "glass-card border border-primary/30" : "glass-card"
+    }`}
   >
     <div className="flex items-center gap-3">
-      <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${highlight ? "bg-gradient-amber text-primary-foreground shadow-glow-sm" : "bg-secondary/60 text-foreground"}`}>
+      <span
+        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${
+          highlight
+            ? "bg-gradient-amber text-primary-foreground shadow-glow-sm"
+            : "bg-secondary/60 text-foreground"
+        }`}
+      >
         <Icon className="h-4 w-4" />
       </span>
       <span className="font-serif-display text-xl">{title}</span>
       <ArrowUpRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
     </div>
     <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{body}</p>
-    <span className="mt-4 inline-block text-xs font-mono uppercase tracking-[0.2em] text-primary/90">{cta} →</span>
+    <span className="mt-4 inline-block text-xs font-mono uppercase tracking-[0.2em] text-primary/90">
+      {cta} -&gt;
+    </span>
   </Link>
 );
 
-const PositionRow = ({ pair, value, il, ilPct, fees, net, apy, status }: typeof positions[number]) => {
+const PositionRow = ({ position }: { position: { pair: string; valueUsd: number | null; apyPct: number | null; deprecated: boolean } }) => {
+  const status = position.deprecated ? "exit" : "live";
   const statusMap = {
-    outperform: { label: "Healthy", cls: "bg-success/10 text-success border-success/30" },
+    live: { label: "Live", cls: "bg-success/10 text-success border-success/30" },
     watch: { label: "Watch", cls: "bg-primary/10 text-primary border-primary/30" },
-    exit: { label: "Consider exit", cls: "bg-destructive/10 text-destructive border-destructive/30" },
+    exit: {
+      label: "Deprecated",
+      cls: "bg-destructive/10 text-destructive border-destructive/30",
+    },
   } as const;
-  const s = statusMap[status as keyof typeof statusMap];
+  const s = statusMap[status];
+
   return (
     <div className="grid md:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] gap-2 md:gap-0 items-center px-6 py-5 border-t border-border/60 first:border-t-0 hover:bg-secondary/20 transition-colors">
       <div className="flex items-center gap-3">
@@ -162,24 +320,32 @@ const PositionRow = ({ pair, value, il, ilPct, fees, net, apy, status }: typeof 
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent to-primary-deep border-2 border-card" />
         </div>
         <div>
-          <div className="font-medium">{pair}</div>
-          <div className="text-xs font-mono text-muted-foreground">{apy}% APY</div>
+          <div className="font-medium">{position.pair}</div>
+          <div className="text-xs font-mono text-muted-foreground">
+            {position.apyPct === null ? "-- APY" : `${position.apyPct.toFixed(2)}% APY`}
+          </div>
         </div>
       </div>
-      <div className="md:text-right font-mono">{fmt(value)}</div>
-      <div className="md:text-right">
-        <div className="font-mono text-destructive">{fmt(il)}</div>
-        <div className="text-[11px] font-mono text-muted-foreground">{ilPct}%</div>
+      <div className="md:text-right font-mono">
+        {position.valueUsd === null ? "--" : fmt(position.valueUsd)}
       </div>
-      <div className="md:text-right font-mono text-success">{fmt(fees)}</div>
       <div className="md:text-right">
-        <span className={`inline-flex items-center gap-1 font-mono ${net >= 0 ? "text-success" : "text-destructive"}`}>
-          {net >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-          {fmt(net)}
+        <div className="font-mono text-muted-foreground">--</div>
+        <div className="text-[11px] font-mono text-muted-foreground">Not exposed</div>
+      </div>
+      <div className="md:text-right font-mono text-muted-foreground">--</div>
+      <div className="md:text-right">
+        <span className="inline-flex items-center gap-1 font-mono text-muted-foreground">
+          <TrendingUp className="h-3.5 w-3.5" />
+          --
         </span>
       </div>
       <div className="md:text-right">
-        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-mono ${s.cls}`}>{s.label}</span>
+        <span
+          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-mono ${s.cls}`}
+        >
+          {s.label}
+        </span>
       </div>
     </div>
   );
@@ -194,7 +360,16 @@ const BigChart = () => (
       </linearGradient>
     </defs>
     {[40, 90, 140, 190].map((y) => (
-      <line key={y} x1="0" x2="800" y1={y} y2={y} stroke="hsl(var(--border))" strokeWidth="1" opacity="0.4" />
+      <line
+        key={y}
+        x1="0"
+        x2="800"
+        y1={y}
+        y2={y}
+        stroke="hsl(var(--border))"
+        strokeWidth="1"
+        opacity="0.4"
+      />
     ))}
     <path
       d="M0,180 C80,170 140,150 220,140 C300,130 360,100 440,90 C520,80 580,70 660,55 C720,45 770,38 800,32 L800,240 L0,240 Z"

@@ -1,8 +1,16 @@
 import AppLayout from "@/components/app/AppLayout";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
+import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
+import {
+  buildOpenPositionTransaction,
+  fetchPoolApys,
+  toTonConnectMessage,
+  type SupportedPoolName,
+} from "@/lib/ston";
 
 const pools = [
   { name: "TON / USDT", apy: 18.4 },
@@ -12,18 +20,91 @@ const pools = [
 ];
 
 const AppSimulatorPage = () => {
+  const { connected, address, connect, tonConnectUI } = useTonWalletSession();
   const [pool, setPool] = useState(pools[0]);
+  const [poolApys, setPoolApys] = useState<Record<string, number>>({});
   const [amount, setAmount] = useState(10000);
   const [pct, setPct] = useState(0);
   const [days, setDays] = useState(90);
+  const [opening, setOpening] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPoolApys = async () => {
+      const apyMap = await fetchPoolApys(pools.map((item) => item.name as SupportedPoolName));
+      if (!cancelled) {
+        setPoolApys(apyMap);
+      }
+    };
+
+    loadPoolApys();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const activePoolApy = poolApys[pool.name] ?? pool.apy;
 
   const { il, ilPct, fees, net } = useMemo(() => {
     const r = 1 + pct / 100;
     const ilPct = (2 * Math.sqrt(r)) / (1 + r) - 1;
     const il = amount * ilPct;
-    const fees = amount * (pool.apy / 100) * (days / 365);
+    const fees = amount * (activePoolApy / 100) * (days / 365);
     return { il, ilPct, fees, net: il + fees };
-  }, [amount, pct, pool, days]);
+  }, [amount, pct, activePoolApy, days]);
+
+  const handleOpenPosition = async () => {
+    if (!connected || !address) {
+      connect();
+      toast({
+        title: "Connect wallet",
+        description: "Please connect a TON wallet to open a STON.fi position.",
+      });
+      return;
+    }
+
+    setOpening(true);
+
+    try {
+      const result = await buildOpenPositionTransaction({
+        poolName: pool.name as SupportedPoolName,
+        walletAddress: address,
+        depositUsd: amount,
+      });
+
+      await tonConnectUI.sendTransaction({
+        validUntil: Math.floor(Date.now() / 1000) + 600,
+        messages: [toTonConnectMessage(result.txParams)],
+      });
+
+      toast({
+        title:
+          result.mode === "liquidity"
+            ? "Liquidity transaction submitted"
+            : "Swap submitted",
+        description:
+          result.mode === "liquidity"
+            ? `Single-side LP add submitted (~${result.offerTonAmount.toFixed(
+                3
+              )} TON).`
+            : `Fallback swap submitted (~${result.offerTonAmount.toFixed(
+                3
+              )} TON).`,
+      });
+    } catch (error) {
+      const description =
+        error instanceof Error ? error.message : "Unable to execute STON.fi swap.";
+      toast({
+        variant: "destructive",
+        title: "Swap failed",
+        description,
+      });
+    } finally {
+      setOpening(false);
+    }
+  };
 
   const fmt = (n: number) =>
     `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -46,7 +127,9 @@ const AppSimulatorPage = () => {
                   }`}
                 >
                   <div className="text-sm font-medium">{p.name}</div>
-                  <div className="text-xs font-mono text-muted-foreground mt-0.5">{p.apy}% APY</div>
+                  <div className="text-xs font-mono text-muted-foreground mt-0.5">
+                    {(poolApys[p.name] ?? p.apy).toFixed(1)}% APY
+                  </div>
                 </button>
               ))}
             </div>
@@ -106,7 +189,15 @@ const AppSimulatorPage = () => {
               </div>
             </div>
 
-            <Button variant="luminous" size="lg" className="mt-auto pt-3 mt-8">Open this position</Button>
+            <Button
+              variant="luminous"
+              size="lg"
+              className="mt-auto pt-3 mt-8"
+              onClick={handleOpenPosition}
+              disabled={opening}
+            >
+              {opening ? "Processing..." : "Open this position"}
+            </Button>
           </div>
         </div>
       </div>

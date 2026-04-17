@@ -4,6 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/site/Section";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 
 const pools = [
   { name: "TON / USDT", apy: 18.4 },
@@ -116,7 +117,9 @@ const SimulatorPage = () => {
                 </div>
               </div>
 
-              <Button variant="luminous" size="lg" className="mt-auto pt-3 mt-8">Open position on STON.fi</Button>
+              <Button variant="luminous" size="lg" className="mt-auto pt-3 mt-8" asChild>
+                <Link to="/app/simulator">Open position on STON.fi</Link>
+              </Button>
             </div>
           </div>
         </div>

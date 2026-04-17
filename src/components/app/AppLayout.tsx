@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, Wallet, BellRing, Repeat, Settings, Calculator, Menu, X, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
 
 const nav = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -16,6 +17,16 @@ const nav = [
 export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; title: string; subtitle?: string }) => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { connected, shortAddress, connect, disconnect } = useTonWalletSession();
+
+  const handleWalletAction = () => {
+    if (connected) {
+      disconnect();
+      return;
+    }
+
+    connect();
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-clip">
@@ -91,11 +102,11 @@ export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; 
             <div className="rounded-2xl glass-card p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-amber text-primary-foreground text-xs font-mono">
-                  EQ
+                  {connected ? "EQ" : "--"}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs text-muted-foreground">Connected</div>
-                  <div className="font-mono text-xs truncate">EQAb…7sJp</div>
+                  <div className="text-xs text-muted-foreground">{connected ? "Connected" : "Not connected"}</div>
+                  <div className="font-mono text-xs truncate">{connected ? shortAddress : "Connect wallet"}</div>
                 </div>
               </div>
               <Button variant="glass" size="sm" className="mt-3 w-full" asChild>
@@ -126,8 +137,8 @@ export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; 
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/how-it-works">Docs</Link>
               </Button>
-              <Button variant="luminous" size="sm">
-                <Wallet className="h-4 w-4" /> Connected
+              <Button variant="luminous" size="sm" onClick={handleWalletAction}>
+                <Wallet className="h-4 w-4" /> {connected ? "Connected" : "Connect wallet"}
               </Button>
             </div>
           </header>

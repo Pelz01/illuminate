@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# ILuminate
 
-TODO: Document your project here
+Web app for LP analytics and position actions on TON/STON.fi.
