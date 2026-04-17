@@ -120,10 +120,6 @@ const SimulatorPage = () => {
             </div>
           </div>
         </div>
-
-        <p className="mt-8 mx-auto max-w-3xl text-center text-xs text-muted-foreground font-mono">
-          IL = 2√r / (1 + r) − 1, where r = current / deposit price ratio. Standard CPMM formula.
-        </p>
       </div>
     </SiteLayout>
   );
