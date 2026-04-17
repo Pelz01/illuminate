@@ -1,6 +1,6 @@
 import SiteLayout from "@/components/site/SiteLayout";
 import { Section } from "@/components/site/Section";
-import Integrations from "@/components/site/Integrations";
+
 import CallToAction from "@/components/site/CallToAction";
 
 const steps = [
@@ -66,7 +66,6 @@ const HowItWorksPage = () => (
       </div>
     </div>
 
-    <Integrations />
     <CallToAction />
   </SiteLayout>
 );
