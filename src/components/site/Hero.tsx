@@ -27,14 +27,14 @@ export const Hero = () => {
           </div>
 
           <h1 className="reveal reveal-delay-1 mt-8 font-serif-display text-5xl leading-[1.02] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            STON.fi shows you <em className="text-gradient-amber not-italic">numbers.</em>
+            Finally know if your <em className="text-gradient-amber not-italic">LP is working.</em>
             <br />
-            <span className="italic text-foreground/90">ILuminate tells you what to do.</span>
+            <span className="italic text-foreground/90">And what to do when it isn't.</span>
           </h1>
 
           <p className="reveal reveal-delay-2 mx-auto mt-7 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-            The decision layer on top of STON.fi — combining IL, fees, and net returns into one
-            clear picture, with one-click action via Omniston.
+            ILuminate sits on top of STON.fi and turns scattered numbers into one clear picture —
+            so you stop guessing whether you'd be better off just holding.
           </p>
 
           <div className="reveal reveal-delay-3 mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
