@@ -1,8 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { StonApiClient, type AssetInfo, type PoolInfo } from "@ston-fi/api";
+import {
+  OperationType,
+  StonApiClient,
+  type AssetInfo,
+  type PoolInfo,
+} from "@ston-fi/api";
 
 const apiClient = new StonApiClient();
-const OPERATION_LOOKBACK_START = new Date("2020-01-01T00:00:00.000Z");
+const OPERATION_LOOKBACK_DAYS = 180;
+const OPERATION_LOOKBACK_MS = OPERATION_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
 type WalletPool = PoolInfo;
 
@@ -72,6 +78,8 @@ export const useStonWalletPositions = (walletAddress?: string) => {
   return useQuery({
     queryKey: ["ston-wallet-positions", walletAddress],
     enabled: Boolean(walletAddress),
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const [assets, walletPools] = await Promise.all([
         apiClient.getAssets(),
@@ -85,12 +93,29 @@ export const useStonWalletPositions = (walletAddress?: string) => {
         return [];
       }
 
-      const walletOperations = await apiClient.getWalletOperations({
-        walletAddress: walletAddress!,
-        since: OPERATION_LOOKBACK_START,
-        until: new Date(),
-        dexV2: true,
-      });
+      const activePoolKeys = new Set(
+        walletPools.map((pool) => normalizeAddress(pool.address))
+      );
+      const until = new Date();
+      const since = new Date(until.getTime() - OPERATION_LOOKBACK_MS);
+
+      const [addLiquidityOps, withdrawLiquidityOps] = await Promise.all([
+        apiClient.getWalletOperations({
+          walletAddress: walletAddress!,
+          since,
+          until,
+          dexV2: true,
+          opType: OperationType.AddLiquidity,
+        }),
+        apiClient.getWalletOperations({
+          walletAddress: walletAddress!,
+          since,
+          until,
+          dexV2: true,
+          opType: OperationType.WithdrawLiquidity,
+        }),
+      ]);
+      const walletOperations = [...addLiquidityOps, ...withdrawLiquidityOps];
 
       const assetsByAddress = new Map<string, AssetInfo>();
       for (const asset of assets) {
@@ -108,6 +133,7 @@ export const useStonWalletPositions = (walletAddress?: string) => {
 
         const poolKey = normalizeAddress(op.poolAddress);
         if (!poolKey) continue;
+        if (!activePoolKeys.has(poolKey)) continue;
         const currentFlow = operationsByPool.get(poolKey) ?? { token0: 0, token1: 0 };
         const token0Amount = toDisplayUnits(
           op.asset0Amount,
