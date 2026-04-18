@@ -23,6 +23,18 @@ const DashboardPage = () => {
   );
 
   const hasPortfolioValue = positionsWithValue.length > 0;
+  const portfolioSub = connected
+    ? `${positions.length} active position${positions.length === 1 ? "" : "s"}`
+    : "Connect wallet to load live data";
+  const ilSub = connected
+    ? "Not provided by /wallets/{address}/pools"
+    : "Connect wallet to load live data";
+  const feesSub = connected
+    ? "Not provided by /wallets/{address}/pools"
+    : "Connect wallet to load live data";
+  const netSub = connected
+    ? "Requires IL and fee attribution pipeline"
+    : "Connect wallet to load live data";
 
   const dashboardPositions = [...positions].sort((a, b) => {
     const aValue = a.valueUsd ?? -1;
@@ -54,25 +66,25 @@ const DashboardPage = () => {
         <KPI
           label="Portfolio value"
           value={hasPortfolioValue ? fmt(totalValue) : "Unavailable"}
-          sub={`${positions.length} active position${positions.length === 1 ? "" : "s"}`}
+          sub={portfolioSub}
           tone="neutral"
         />
         <KPI
           label="Impermanent loss"
           value="Unavailable"
-          sub="Not provided by /wallets/{address}/pools"
+          sub={ilSub}
           tone="neutral"
         />
         <KPI
           label="Fees earned"
           value="Unavailable"
-          sub="Not provided by /wallets/{address}/pools"
+          sub={feesSub}
           tone="neutral"
         />
         <KPI
           label="Net return"
           value="Unavailable"
-          sub="Requires IL and fee attribution pipeline"
+          sub={netSub}
           tone="neutral"
           highlight
         />
