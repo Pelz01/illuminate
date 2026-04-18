@@ -1,44 +1,38 @@
 import { Section } from "./Section";
-import { LayoutDashboard, LineChart, Target, BellRing, Repeat } from "lucide-react";
+import { LayoutDashboard, LineChart, Target, BellRing } from "lucide-react";
 
 const features = [
   {
     icon: LayoutDashboard,
     title: "Position dashboard",
-    body: "Every active LP position from your wallet, surfaced in one continuous view. Live values, live fees, live IL.",
+    body: "Connect via TonConnect. Every active STON.fi LP position loads from the live API — token pair, deposited value, current value, IL %. One screen, everything.",
     span: "md:col-span-2",
   },
   {
     icon: LineChart,
     title: "Hold vs LP chart",
-    body: "Compare what your position is doing now against what it would be doing if you'd just held the tokens.",
+    body: "Two lines: your live LP value vs what your tokens would be worth if you'd just held. The gap is your impermanent loss, made visible — sourced from on-chain deposit timestamp + STON.fi pool price history.",
     span: "md:col-span-1",
   },
   {
     icon: Target,
     title: "Net return score",
-    body: "One honest number per position. Fees minus IL minus opportunity cost. No spin.",
+    body: "IL alone is half the picture. We pull real fees from STON.fi's fee accruals API and net them against IL. Not '12% IL' — but 'after fees, you're up $35 or down $8'.",
     span: "md:col-span-1",
   },
   {
     icon: BellRing,
-    title: "Smart exit alerts",
-    body: "Get notified the moment your IL crosses a threshold worth acting on — not after.",
-    span: "md:col-span-1",
-  },
-  {
-    icon: Repeat,
-    title: "One-click rebalance",
-    body: "Routed through Omniston for best execution across every TON DEX. Stay in the app.",
-    span: "md:col-span-1",
+    title: "Smart exit alert + one-click rebalance",
+    body: "When IL begins to exceed fees earned, the position gets flagged. Trigger a rebalance — Omniston finds the best route across every TON DEX, STON.fi DEX SDK builds the swap. One wallet approval. Done.",
+    span: "md:col-span-2",
   },
 ];
 
 export const Features = () => (
   <Section
-    eyebrow="The Product"
-    title={<>Five features. <em className="italic text-primary/90">One outcome.</em></>}
-    description="Move from 'I have no idea how my LP positions are doing' to full clarity — and know exactly what to do next."
+    eyebrow="The Product · V1"
+    title={<>Four features. <em className="italic text-primary/90">One outcome.</em></>}
+    description="Built on top of STON.fi, not instead of it. Real data only — every metric is sourced from live STON.fi APIs or on-chain history. No mock data, no estimates."
   >
     <div className="mt-16 grid gap-4 md:grid-cols-3 md:auto-rows-fr">
       {features.map(({ icon: Icon, title, body, span }, i) => (
