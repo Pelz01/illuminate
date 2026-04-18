@@ -21,8 +21,16 @@ const DashboardPage = () => {
     (sum, position) => sum + (position.valueUsd ?? 0),
     0
   );
+  const positionsWithNetVsHold = positions.filter(
+    (position) => position.netVsHoldUsd !== null
+  );
+  const totalNetVsHold = positionsWithNetVsHold.reduce(
+    (sum, position) => sum + (position.netVsHoldUsd ?? 0),
+    0
+  );
 
   const hasPortfolioValue = positionsWithValue.length > 0;
+  const hasNetVsHold = positionsWithNetVsHold.length > 0;
   const portfolioSub = connected
     ? `${positions.length} active position${positions.length === 1 ? "" : "s"}`
     : "Connect wallet to load live data";
@@ -33,7 +41,9 @@ const DashboardPage = () => {
     ? "Not provided by /wallets/{address}/pools"
     : "Connect wallet to load live data";
   const netSub = connected
-    ? "Requires IL and fee attribution pipeline"
+    ? hasNetVsHold
+      ? "LP value vs hold baseline from live add/withdraw operations"
+      : "Insufficient liquidity operation history for attribution"
     : "Connect wallet to load live data";
 
   const dashboardPositions = [...positions].sort((a, b) => {
@@ -83,9 +93,15 @@ const DashboardPage = () => {
         />
         <KPI
           label="Net return"
-          value="Unavailable"
+          value={hasNetVsHold ? fmt(totalNetVsHold) : "Unavailable"}
           sub={netSub}
-          tone="neutral"
+          tone={
+            hasNetVsHold
+              ? totalNetVsHold >= 0
+                ? "good"
+                : "bad"
+              : "neutral"
+          }
           highlight
         />
       </div>
@@ -113,8 +129,8 @@ const DashboardPage = () => {
             </div>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
               <li>Hold vs LP chart requires historical deposit snapshots.</li>
-              <li>IL, fees, and net return require attribution across wallet operations.</li>
-              <li>Only live wallet pool state is shown right now.</li>
+              <li>IL and fees remain unavailable until full attribution is enabled.</li>
+              <li>Net vs hold uses live add/withdraw liquidity operations when present.</li>
             </ul>
           </div>
         </div>
@@ -272,7 +288,17 @@ const ActionCard = ({
   </Link>
 );
 
-const PositionRow = ({ position }: { position: { pair: string; valueUsd: number | null; apyPct: number | null; deprecated: boolean } }) => {
+const PositionRow = ({
+  position,
+}: {
+  position: {
+    pair: string;
+    valueUsd: number | null;
+    apyPct: number | null;
+    netVsHoldUsd: number | null;
+    deprecated: boolean;
+  };
+}) => {
   const status = position.deprecated ? "exit" : "live";
   const statusMap = {
     live: { label: "Live", cls: "bg-success/10 text-success border-success/30" },
@@ -306,7 +332,9 @@ const PositionRow = ({ position }: { position: { pair: string; valueUsd: number 
         <div className="text-[11px] font-mono text-muted-foreground">Requires attribution</div>
       </div>
       <div className="md:text-right font-mono text-muted-foreground">Unavailable</div>
-      <div className="md:text-right font-mono text-muted-foreground">Unavailable</div>
+      <div className="md:text-right font-mono text-muted-foreground">
+        {position.netVsHoldUsd === null ? "Unavailable" : fmt(position.netVsHoldUsd)}
+      </div>
       <div className="md:text-right">
         <span
           className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-mono ${s.cls}`}

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { StonApiClient, type AssetInfo, type PoolInfo } from "@ston-fi/api";
 
 const apiClient = new StonApiClient();
+const OPERATION_LOOKBACK_START = new Date("2020-01-01T00:00:00.000Z");
 
 type WalletPool = PoolInfo;
 
@@ -12,6 +13,16 @@ const safeNumber = (value?: string) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
+
+const toDisplayUnits = (value: string, decimals?: number) => {
+  const parsed = safeNumber(value);
+  if (parsed === null) return null;
+  if (decimals === undefined) return parsed;
+  return parsed / 10 ** decimals;
+};
+
+const getAssetPriceUsd = (asset?: AssetInfo) =>
+  safeNumber(asset?.dexPriceUsd) ?? safeNumber(asset?.thirdPartyPriceUsd);
 
 const formatSymbol = (address: string, assetsByAddress: Map<string, AssetInfo>) => {
   const normalized = normalizeAddress(address);
@@ -34,6 +45,16 @@ const computePositionValueUsd = (pool: WalletPool) => {
   return (lpBalance / lpTotalSupply) * lpTotalSupplyUsd;
 };
 
+type PoolTokenFlow = {
+  token0: number;
+  token1: number;
+};
+
+const isLiquiditySettlementOp = (rawType: string) => {
+  const type = rawType.toLowerCase();
+  return type === "add_liquidity" || type === "withdraw_liquidity";
+};
+
 export type WalletPosition = {
   poolAddress: string;
   pair: string;
@@ -41,6 +62,9 @@ export type WalletPosition = {
   token1Symbol: string;
   apyPct: number | null;
   valueUsd: number | null;
+  holdValueUsd: number | null;
+  netVsHoldUsd: number | null;
+  attributionOpsCount: number;
   deprecated: boolean;
 };
 
@@ -49,10 +73,16 @@ export const useStonWalletPositions = (walletAddress?: string) => {
     queryKey: ["ston-wallet-positions", walletAddress],
     enabled: Boolean(walletAddress),
     queryFn: async () => {
-      const [assets, walletPools] = await Promise.all([
+      const [assets, walletPools, walletOperations] = await Promise.all([
         apiClient.getAssets(),
         apiClient.getWalletPools({
           walletAddress: walletAddress!,
+          dexV2: true,
+        }),
+        apiClient.getWalletOperations({
+          walletAddress: walletAddress!,
+          since: OPERATION_LOOKBACK_START,
+          until: new Date(),
           dexV2: true,
         }),
       ]);
@@ -60,6 +90,34 @@ export const useStonWalletPositions = (walletAddress?: string) => {
       const assetsByAddress = new Map<string, AssetInfo>();
       for (const asset of assets) {
         assetsByAddress.set(normalizeAddress(asset.contractAddress), asset);
+      }
+
+      const tonAsset =
+        assets.find((asset) => asset.symbol.toUpperCase() === "TON") ?? null;
+      const operationsByPool = new Map<string, PoolTokenFlow>();
+      const opCountByPool = new Map<string, number>();
+
+      for (const item of walletOperations) {
+        const op = item.operation;
+        if (!op.success || !isLiquiditySettlementOp(op.operationType)) continue;
+
+        const poolKey = normalizeAddress(op.poolAddress);
+        if (!poolKey) continue;
+        const currentFlow = operationsByPool.get(poolKey) ?? { token0: 0, token1: 0 };
+        const token0Amount = toDisplayUnits(
+          op.asset0Amount,
+          item.asset0Info?.decimals
+        );
+        const token1Amount = toDisplayUnits(
+          op.asset1Amount,
+          item.asset1Info?.decimals
+        );
+
+        operationsByPool.set(poolKey, {
+          token0: currentFlow.token0 + (token0Amount ?? 0),
+          token1: currentFlow.token1 + (token1Amount ?? 0),
+        });
+        opCountByPool.set(poolKey, (opCountByPool.get(poolKey) ?? 0) + 1);
       }
 
       const positions: WalletPosition[] = walletPools.map((pool) => {
@@ -70,6 +128,31 @@ export const useStonWalletPositions = (walletAddress?: string) => {
           safeNumber(pool.apy30D) ??
           safeNumber(pool.apy7D) ??
           safeNumber(pool.apy1D);
+        const valueUsd = computePositionValueUsd(pool);
+
+        const poolKey = normalizeAddress(pool.address);
+        const flow = operationsByPool.get(poolKey);
+        const token0Asset =
+          normalizeAddress(pool.token0Address) === "ton"
+            ? tonAsset ?? undefined
+            : assetsByAddress.get(normalizeAddress(pool.token0Address));
+        const token1Asset =
+          normalizeAddress(pool.token1Address) === "ton"
+            ? tonAsset ?? undefined
+            : assetsByAddress.get(normalizeAddress(pool.token1Address));
+        const token0PriceUsd = getAssetPriceUsd(token0Asset);
+        const token1PriceUsd = getAssetPriceUsd(token1Asset);
+
+        const holdValueUsd =
+          flow &&
+          token0PriceUsd !== null &&
+          token1PriceUsd !== null
+            ? flow.token0 * token0PriceUsd + flow.token1 * token1PriceUsd
+            : null;
+        const netVsHoldUsd =
+          valueUsd !== null && holdValueUsd !== null
+            ? valueUsd - holdValueUsd
+            : null;
 
         return {
           poolAddress: pool.address,
@@ -77,7 +160,10 @@ export const useStonWalletPositions = (walletAddress?: string) => {
           token0Symbol,
           token1Symbol,
           apyPct,
-          valueUsd: computePositionValueUsd(pool),
+          valueUsd,
+          holdValueUsd,
+          netVsHoldUsd,
+          attributionOpsCount: opCountByPool.get(poolKey) ?? 0,
           deprecated: pool.deprecated,
         };
       });

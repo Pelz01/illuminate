@@ -16,7 +16,7 @@ const PositionsPage = () => {
   return (
     <AppLayout
       title="Positions"
-      subtitle="Wallet LP positions pulled from STON.fi endpoint /v1/wallets/{address}/pools."
+      subtitle="Wallet LP positions from /v1/wallets/{address}/pools with net-vs-hold attribution from /v1/wallets/{address}/operations."
     >
       {!connected && (
         <div className="glass-card rounded-2xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -91,7 +91,14 @@ const PositionsPage = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3">
-              <Metric label="Deposit" value="Unavailable" />
+              <Metric
+                label="Hold baseline"
+                value={
+                  position.holdValueUsd === null
+                    ? "Unavailable"
+                    : fmt(position.holdValueUsd)
+                }
+              />
               <Metric
                 label="Current value"
                 value={
@@ -106,10 +113,27 @@ const PositionsPage = () => {
               <div className="flex items-end justify-between">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Net P&L
+                    Net vs hold
                   </div>
-                  <div className="mt-1 font-serif-display text-2xl text-muted-foreground">
-                    Unavailable
+                  <div
+                    className={`mt-1 font-serif-display text-2xl ${
+                      position.netVsHoldUsd === null
+                        ? "text-muted-foreground"
+                        : position.netVsHoldUsd >= 0
+                        ? "text-success"
+                        : "text-destructive"
+                    }`}
+                  >
+                    {position.netVsHoldUsd === null
+                      ? "Unavailable"
+                      : fmt(position.netVsHoldUsd)}
+                  </div>
+                  <div className="mt-1 text-[11px] font-mono text-muted-foreground">
+                    {position.attributionOpsCount > 0
+                      ? `${position.attributionOpsCount} liquidity operation${
+                          position.attributionOpsCount === 1 ? "" : "s"
+                        } attributed`
+                      : "No attributable add/withdraw operations found"}
                   </div>
                 </div>
                 <Button variant="glass" size="sm" disabled>
