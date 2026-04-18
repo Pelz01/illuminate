@@ -6,8 +6,6 @@ import {
   ArrowUpRight,
   BellRing,
   Repeat,
-  TrendingDown,
-  TrendingUp,
 } from "lucide-react";
 import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
 import { useStonWalletPositions } from "@/hooks/use-ston-wallet-positions";
@@ -25,9 +23,6 @@ const DashboardPage = () => {
   );
 
   const hasPortfolioValue = positionsWithValue.length > 0;
-  const totalIL = null;
-  const totalFees = null;
-  const totalNet = null;
 
   const dashboardPositions = [...positions].sort((a, b) => {
     const aValue = a.valueUsd ?? -1;
@@ -58,26 +53,26 @@ const DashboardPage = () => {
       <div className="grid gap-4 md:grid-cols-4">
         <KPI
           label="Portfolio value"
-          value={hasPortfolioValue ? fmt(totalValue) : "--"}
+          value={hasPortfolioValue ? fmt(totalValue) : "Unavailable"}
           sub={`${positions.length} active position${positions.length === 1 ? "" : "s"}`}
           tone="neutral"
         />
         <KPI
           label="Impermanent loss"
-          value={totalIL === null ? "--" : fmt(totalIL)}
+          value="Unavailable"
           sub="Not provided by /wallets/{address}/pools"
           tone="neutral"
         />
         <KPI
           label="Fees earned"
-          value={totalFees === null ? "--" : fmt(totalFees)}
+          value="Unavailable"
           sub="Not provided by /wallets/{address}/pools"
           tone="neutral"
         />
         <KPI
           label="Net return"
-          value={totalNet === null ? "--" : fmt(totalNet)}
-          sub="Pending explicit IL/fees model"
+          value="Unavailable"
+          sub="Requires IL and fee attribution pipeline"
           tone="neutral"
           highlight
         />
@@ -99,29 +94,16 @@ const DashboardPage = () => {
                   : "Connect wallet to start live position tracking"}
               </div>
             </div>
-            <div className="hidden sm:flex gap-2">
-              {["7D", "30D", "90D", "ALL"].map((t, i) => (
-                <button
-                  key={t}
-                  className={`rounded-full px-3 py-1 text-xs font-mono transition-colors ${
-                    i === 1
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
           </div>
-          <BigChart />
-          <div className="mt-4 flex flex-wrap gap-6 text-xs">
-            <Legend color="hsl(var(--primary))" label="LP position (visual placeholder)" />
-            <Legend
-              color="hsl(var(--muted-foreground))"
-              label="Hold scenario (pending model)"
-              dashed
-            />
+          <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-5">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              Unavailable metrics
+            </div>
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <li>Hold vs LP chart requires historical deposit snapshots.</li>
+              <li>IL, fees, and net return require attribution across wallet operations.</li>
+              <li>Only live wallet pool state is shown right now.</li>
+            </ul>
           </div>
         </div>
 
@@ -129,15 +111,15 @@ const DashboardPage = () => {
         <div className="space-y-4">
           <ActionCard
             icon={BellRing}
-            title="Alerts module ready"
-            body="Alert thresholds are configurable. Live IL-based triggering is pending explicit fee/IL model."
+            title="Alerts configuration available"
+            body="Threshold and channels can be configured. Live alert firing stays disabled until attribution is active."
             cta="Review alerts"
             to="/app/alerts"
           />
           <ActionCard
             icon={Repeat}
-            title="Rebalance module ready"
-            body="Execution flow is wired. Route and optimization logic will use live positions in the next step."
+            title="Rebalance module pending"
+            body="Live recommendation output is unavailable until wallet-level attribution can produce non-static actions."
             cta="Open rebalance"
             to="/app/rebalance"
             highlight
@@ -237,28 +219,6 @@ const KPI = ({
   </div>
 );
 
-const Legend = ({
-  color,
-  label,
-  dashed,
-}: {
-  color: string;
-  label: string;
-  dashed?: boolean;
-}) => (
-  <div className="flex items-center gap-2 text-muted-foreground">
-    <span
-      className="h-0.5 w-6"
-      style={{
-        background: dashed
-          ? `repeating-linear-gradient(90deg, ${color}, ${color} 3px, transparent 3px, transparent 6px)`
-          : color,
-      }}
-    />
-    {label}
-  </div>
-);
-
 const ActionCard = ({
   icon: Icon,
   title,
@@ -322,24 +282,19 @@ const PositionRow = ({ position }: { position: { pair: string; valueUsd: number 
         <div>
           <div className="font-medium">{position.pair}</div>
           <div className="text-xs font-mono text-muted-foreground">
-            {position.apyPct === null ? "-- APY" : `${position.apyPct.toFixed(2)}% APY`}
+            {position.apyPct === null ? "APY unavailable" : `${position.apyPct.toFixed(2)}% APY`}
           </div>
         </div>
       </div>
       <div className="md:text-right font-mono">
-        {position.valueUsd === null ? "--" : fmt(position.valueUsd)}
+        {position.valueUsd === null ? "Unavailable" : fmt(position.valueUsd)}
       </div>
       <div className="md:text-right">
-        <div className="font-mono text-muted-foreground">--</div>
-        <div className="text-[11px] font-mono text-muted-foreground">Not exposed</div>
+        <div className="font-mono text-muted-foreground">Unavailable</div>
+        <div className="text-[11px] font-mono text-muted-foreground">Requires attribution</div>
       </div>
-      <div className="md:text-right font-mono text-muted-foreground">--</div>
-      <div className="md:text-right">
-        <span className="inline-flex items-center gap-1 font-mono text-muted-foreground">
-          <TrendingUp className="h-3.5 w-3.5" />
-          --
-        </span>
-      </div>
+      <div className="md:text-right font-mono text-muted-foreground">Unavailable</div>
+      <div className="md:text-right font-mono text-muted-foreground">Unavailable</div>
       <div className="md:text-right">
         <span
           className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-mono ${s.cls}`}
@@ -350,46 +305,5 @@ const PositionRow = ({ position }: { position: { pair: string; valueUsd: number 
     </div>
   );
 };
-
-const BigChart = () => (
-  <svg viewBox="0 0 800 240" className="mt-6 w-full h-56">
-    <defs>
-      <linearGradient id="lpFillBig" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stopColor="hsl(38 95% 60%)" stopOpacity="0.35" />
-        <stop offset="100%" stopColor="hsl(38 95% 60%)" stopOpacity="0" />
-      </linearGradient>
-    </defs>
-    {[40, 90, 140, 190].map((y) => (
-      <line
-        key={y}
-        x1="0"
-        x2="800"
-        y1={y}
-        y2={y}
-        stroke="hsl(var(--border))"
-        strokeWidth="1"
-        opacity="0.4"
-      />
-    ))}
-    <path
-      d="M0,180 C80,170 140,150 220,140 C300,130 360,100 440,90 C520,80 580,70 660,55 C720,45 770,38 800,32 L800,240 L0,240 Z"
-      fill="url(#lpFillBig)"
-    />
-    <path
-      d="M0,180 C80,170 140,150 220,140 C300,130 360,100 440,90 C520,80 580,70 660,55 C720,45 770,38 800,32"
-      stroke="hsl(38 95% 60%)"
-      strokeWidth="2.5"
-      fill="none"
-    />
-    <path
-      d="M0,185 C100,178 200,168 300,158 C400,148 500,140 600,130 C680,122 760,118 800,115"
-      stroke="hsl(40 12% 62%)"
-      strokeWidth="1.5"
-      strokeDasharray="5 5"
-      fill="none"
-      opacity="0.7"
-    />
-  </svg>
-);
 
 export default DashboardPage;

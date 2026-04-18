@@ -1,83 +1,108 @@
 import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, Zap, ShieldCheck, Route } from "lucide-react";
+import { Zap, ShieldCheck, Route } from "lucide-react";
+import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
+import { useStonWalletPositions } from "@/hooks/use-ston-wallet-positions";
 
-const RebalancePage = () => (
-  <AppLayout
-    title="Rebalance"
-    subtitle="Best-route execution across every TON DEX via Omniston. STON.fi DEX SDK builds and sends the swap. You stay in the app."
-  >
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      {/* Swap card */}
-      <div className="relative">
-        <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-primary/40 via-transparent to-accent/30 opacity-60 blur" />
-        <div className="relative glass-card rounded-3xl p-6 md:p-8">
-          <div className="text-[11px] uppercase tracking-[0.2em] text-primary/90 font-mono">Suggested rebalance</div>
-          <h2 className="mt-2 font-serif-display text-3xl">Exit USDT / DOGS → TON / USDT</h2>
+const RebalancePage = () => {
+  const { connected, address, connect } = useTonWalletSession();
+  const { data: positions = [], isLoading } = useStonWalletPositions(address);
 
-          <div className="mt-8 space-y-3">
-            <SwapBlock label="From" pair="USDT / DOGS" amount="$3,210.60" sub="Net loss −7.1%" tone="bad" />
-            <div className="flex justify-center -my-2 relative z-10">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full glass-card">
-                <ArrowDown className="h-4 w-4 text-primary" />
-              </span>
+  return (
+    <AppLayout
+      title="Rebalance"
+      subtitle="Live route execution is enabled only after recommendation logic is computed from wallet-level attribution."
+    >
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <div className="relative">
+          <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-primary/40 via-transparent to-accent/30 opacity-60 blur" />
+          <div className="relative glass-card rounded-3xl p-6 md:p-8">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-primary/90 font-mono">
+              Rebalance status
             </div>
-            <SwapBlock label="To" pair="TON / USDT" amount="$3,210.60" sub="18.4% APY · healthy" tone="good" />
-          </div>
+            <h2 className="mt-2 font-serif-display text-3xl">Live recommendations unavailable</h2>
 
-          <div className="mt-8 rounded-2xl border border-border/60 bg-background/40 p-5 space-y-3 text-sm">
-            <Row label="Best route via" value="Omniston · STON.fi → DeDust" />
-            <Row label="Estimated price impact" value="0.12%" />
-            <Row label="Network fee" value="≈ 0.18 TON" />
-            <Row label="30-day projected upside" value="+$412" valueClass="text-success" />
-          </div>
+            {!connected && (
+              <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-5">
+                <p className="text-sm text-muted-foreground">
+                  Connect wallet to prepare live rebalance suggestions once attribution is enabled.
+                </p>
+                <Button variant="glass" className="mt-4" onClick={connect}>
+                  Connect wallet
+                </Button>
+              </div>
+            )}
 
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <Button variant="luminous" size="lg" className="flex-1">
-              <Zap className="h-4 w-4" /> Execute rebalance
-            </Button>
-            <Button variant="glass" size="lg">Customize route</Button>
+            {connected && isLoading && (
+              <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-5 text-sm text-muted-foreground">
+                Loading wallet positions...
+              </div>
+            )}
+
+            {connected && !isLoading && positions.length === 0 && (
+              <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-5 text-sm text-muted-foreground">
+                No STON.fi positions found for this wallet.
+              </div>
+            )}
+
+            {connected && !isLoading && positions.length > 0 && (
+              <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-5">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-mono">
+                  Positions detected
+                </div>
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  {positions.map((position) => (
+                    <li key={position.poolAddress}>{position.pair}</li>
+                  ))}
+                </ul>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Rebalance execution stays disabled until live IL and fee attribution produce an actual recommendation.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <Button variant="luminous" size="lg" className="flex-1" disabled>
+                <Zap className="h-4 w-4" /> Execute rebalance
+              </Button>
+              <Button variant="glass" size="lg" disabled>
+                Customize route
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Side info */}
-      <div className="space-y-4">
-        <Info icon={Route} title="Best route discovery" body="Omniston SDK queries every TON DEX in real time and returns the optimal multi-hop path. WebSocket keeps quotes fresh." />
-        <Info icon={ShieldCheck} title="Non-custodial execution" body="The transaction is built locally with STON.fi DEX SDK and signed in your wallet. We never touch your funds." />
-        <Info icon={Zap} title="One signature, end-to-end" body="Withdraw, swap, redeposit — bundled. No bouncing between apps, no manual route hunting." />
-      </div>
-    </div>
-  </AppLayout>
-);
-
-const SwapBlock = ({ label, pair, amount, sub, tone }: { label: string; pair: string; amount: string; sub: string; tone: "good" | "bad" }) => (
-  <div className="rounded-2xl border border-border/60 bg-background/40 p-5">
-    <div className="flex items-center justify-between">
-      <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-mono">{label}</span>
-      <span className={`text-xs font-mono ${tone === "good" ? "text-success" : "text-destructive"}`}>{sub}</span>
-    </div>
-    <div className="mt-3 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="flex -space-x-2">
-          <div className="h-9 w-9 rounded-full bg-gradient-amber border-2 border-card" />
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-accent to-primary-deep border-2 border-card" />
+        <div className="space-y-4">
+          <Info
+            icon={Route}
+            title="Route engine"
+            body="STON.fi SDK route building is available. It will be activated after recommendations are computed from live wallet data."
+          />
+          <Info
+            icon={ShieldCheck}
+            title="Non-custodial execution"
+            body="Transactions are signed in your wallet through TonConnect. No custody layer is introduced."
+          />
+          <Info
+            icon={Zap}
+            title="Activation requirement"
+            body="Rebalance actions become available only when a recommendation is derived from real attribution, not static examples."
+          />
         </div>
-        <span className="font-medium">{pair}</span>
       </div>
-      <span className="font-serif-display text-2xl">{amount}</span>
-    </div>
-  </div>
-);
+    </AppLayout>
+  );
+};
 
-const Row = ({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) => (
-  <div className="flex items-center justify-between">
-    <span className="text-muted-foreground">{label}</span>
-    <span className={`font-mono ${valueClass ?? ""}`}>{value}</span>
-  </div>
-);
-
-const Info = ({ icon: Icon, title, body }: { icon: typeof Zap; title: string; body: string }) => (
+const Info = ({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: typeof Zap;
+  title: string;
+  body: string;
+}) => (
   <div className="glass-card rounded-2xl p-6">
     <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-amber text-primary-foreground shadow-glow-sm">
       <Icon className="h-4 w-4" />

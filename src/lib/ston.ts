@@ -118,7 +118,7 @@ export const fetchPoolApys = async (poolNames: SupportedPoolName[]) => {
           apyMap[poolName] = apy;
         }
       } catch {
-        // Keep existing UI fallback values if this pool is unavailable.
+        // Pool APY will remain unavailable in the UI if lookup fails.
       }
     })
   );

@@ -1,31 +1,55 @@
 import SiteLayout from "@/components/site/SiteLayout";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/site/Section";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
+import { fetchPoolApys, type SupportedPoolName } from "@/lib/ston";
 
 const pools = [
-  { name: "TON / USDT", apy: 18.4 },
-  { name: "TON / NOT", apy: 42.1 },
-  { name: "TON / STON", apy: 27.6 },
-  { name: "USDT / DOGS", apy: 64.0 },
+  { name: "TON / USDT" },
+  { name: "TON / NOT" },
+  { name: "TON / STON" },
+  { name: "USDT / DOGS" },
 ];
 
 const SimulatorPage = () => {
   const [pool, setPool] = useState(pools[0]);
+  const [poolApys, setPoolApys] = useState<Record<string, number>>({});
   const [amount, setAmount] = useState(10000);
   const [pct, setPct] = useState(0);
   const [days, setDays] = useState(90);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPoolApys = async () => {
+      const apyMap = await fetchPoolApys(
+        pools.map((item) => item.name as SupportedPoolName)
+      );
+      if (!cancelled) {
+        setPoolApys(apyMap);
+      }
+    };
+
+    loadPoolApys();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const activePoolApy = poolApys[pool.name] ?? null;
 
   const { il, ilPct, fees, net } = useMemo(() => {
     const r = 1 + pct / 100;
     const ilPct = (2 * Math.sqrt(r)) / (1 + r) - 1;
     const il = amount * ilPct;
-    const fees = amount * (pool.apy / 100) * (days / 365);
-    return { il, ilPct, fees, net: il + fees };
-  }, [amount, pct, pool, days]);
+    const fees =
+      activePoolApy === null ? null : amount * (activePoolApy / 100) * (days / 365);
+    return { il, ilPct, fees, net: fees === null ? null : il + fees };
+  }, [amount, pct, activePoolApy, days]);
 
   const fmt = (n: number) =>
     `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -35,7 +59,7 @@ const SimulatorPage = () => {
       <Section
         eyebrow="IL Simulator"
         title={<>Model any STON.fi position <em className="italic text-primary/90">in seconds.</em></>}
-        description="No DeFi knowledge required. Designed for someone who's never heard of impermanent loss — and for someone who has."
+        description="Scenario estimator using live APY where available. Any unavailable metric is shown explicitly."
       />
 
       <div className="container -mt-10 pb-12">
@@ -56,7 +80,11 @@ const SimulatorPage = () => {
                     }`}
                   >
                     <div className="text-sm font-medium">{p.name}</div>
-                    <div className="text-xs font-mono text-muted-foreground mt-0.5">{p.apy}% APY</div>
+                    <div className="text-xs font-mono text-muted-foreground mt-0.5">
+                      {poolApys[p.name] === undefined
+                        ? "APY unavailable"
+                        : `${poolApys[p.name].toFixed(1)}% APY`}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -104,16 +132,25 @@ const SimulatorPage = () => {
 
               <div className="mt-8 grid grid-cols-2 gap-4">
                 <Metric label="Impermanent loss" value={fmt(il)} sub={`${(ilPct * 100).toFixed(2)}%`} tone="bad" />
-                <Metric label="Fees earned" value={fmt(fees)} sub={`${pool.apy}% APY`} tone="good" />
+                <Metric
+                  label="Fees earned"
+                  value={fees === null ? "Unavailable" : fmt(fees)}
+                  sub={activePoolApy === null ? "APY unavailable" : `${activePoolApy.toFixed(1)}% APY`}
+                  tone="good"
+                />
               </div>
 
               <div className="mt-8 rounded-2xl border border-border/60 bg-background/40 p-6">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Net P&L</div>
-                <div className={`mt-2 font-serif-display text-5xl md:text-6xl ${net >= 0 ? "text-gradient-amber" : "text-destructive"}`}>
-                  {fmt(net)}
+                <div className={`mt-2 font-serif-display text-5xl md:text-6xl ${net === null ? "text-muted-foreground" : net >= 0 ? "text-gradient-amber" : "text-destructive"}`}>
+                  {net === null ? "Unavailable" : fmt(net)}
                 </div>
                 <div className="mt-2 text-sm text-muted-foreground">
-                  {net >= 0 ? "Position outperforms holding." : "Holding would have outperformed this position."}
+                  {net === null
+                    ? "Net result requires live APY for the selected pool."
+                    : net >= 0
+                    ? "Position outperforms holding."
+                    : "Holding would have outperformed this position."}
                 </div>
               </div>
 
@@ -131,7 +168,17 @@ const SimulatorPage = () => {
 const Metric = ({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: "good" | "bad" }) => (
   <div className="rounded-xl border border-border/60 bg-background/40 p-5">
     <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-    <div className={`mt-2 font-serif-display text-2xl ${tone === "good" ? "text-success" : "text-destructive"}`}>{value}</div>
+    <div
+      className={`mt-2 font-serif-display text-2xl ${
+        value === "Unavailable"
+          ? "text-muted-foreground"
+          : tone === "good"
+          ? "text-success"
+          : "text-destructive"
+      }`}
+    >
+      {value}
+    </div>
     <div className="mt-1 text-xs font-mono text-muted-foreground">{sub}</div>
   </div>
 );

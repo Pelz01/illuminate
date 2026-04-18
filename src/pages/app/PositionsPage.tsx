@@ -1,6 +1,6 @@
 import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, ExternalLink } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
 import { useStonWalletPositions } from "@/hooks/use-ston-wallet-positions";
 
@@ -80,30 +80,26 @@ const PositionsPage = () => {
                   <div className="font-serif-display text-xl">{position.pair}</div>
                   <div className="text-xs font-mono text-muted-foreground">
                     {position.apyPct === null
-                      ? "-- APY"
+                      ? "APY unavailable"
                       : `${position.apyPct.toFixed(2)}% APY`}
                   </div>
                 </div>
               </div>
-              <a
-                className="text-muted-foreground hover:text-primary"
-                href="#"
-                aria-label="Open pool"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
+              <span className="text-[11px] font-mono text-muted-foreground">
+                {position.deprecated ? "Deprecated" : "Live"}
+              </span>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3">
-              <Metric label="Deposit" value="--" />
+              <Metric label="Deposit" value="Unavailable" />
               <Metric
                 label="Current value"
                 value={
-                  position.valueUsd === null ? "--" : fmt(position.valueUsd)
+                  position.valueUsd === null ? "Unavailable" : fmt(position.valueUsd)
                 }
               />
-              <Metric label="Impermanent loss" value="--" tone="bad" />
-              <Metric label="Fees earned" value="--" tone="good" />
+              <Metric label="Impermanent loss" value="Unavailable" tone="bad" />
+              <Metric label="Fees earned" value="Unavailable" tone="good" />
             </div>
 
             <div className="mt-6 rounded-xl border border-border/60 bg-background/40 p-4">
@@ -113,7 +109,7 @@ const PositionsPage = () => {
                     Net P&L
                   </div>
                   <div className="mt-1 font-serif-display text-2xl text-muted-foreground">
-                    --
+                    Unavailable
                   </div>
                 </div>
                 <Button variant="glass" size="sm" disabled>

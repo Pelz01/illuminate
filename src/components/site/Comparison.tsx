@@ -5,13 +5,13 @@ type Cell = boolean | "partial" | "scope";
 
 const rows: Array<[string, string, Cell]> = [
   ["LP position tracking", "Yes — dashboard shows positions", true],
-  ["Impermanent loss calculation", "Standalone calculator at tools.ston.fi", true],
+  ["Impermanent loss calculation", "Standalone calculator at tools.ston.fi", "partial"],
   ["IL protection program", "Yes — USDT/STON pool only", "scope"],
-  ["Hold vs LP comparison chart", "—", true],
-  ["Net return: IL minus fees earned", "Shown separately, not combined", true],
-  ["Smart exit alert (when IL exceeds fees)", "—", true],
-  ["Pre-entry IL simulator (wallet + pool aware)", "Generic calculator, not wallet-specific", true],
-  ["One-click rebalance via Omniston", "Manual process", true],
+  ["Hold vs LP comparison chart", "—", "partial"],
+  ["Net return: IL minus fees earned", "Shown separately, not combined", "partial"],
+  ["Smart exit alert (when IL exceeds fees)", "—", "partial"],
+  ["Pre-entry IL simulator (wallet + pool aware)", "Generic calculator, not wallet-specific", "partial"],
+  ["One-click rebalance via Omniston", "Manual process", "partial"],
 ];
 
 export const Comparison = () => (

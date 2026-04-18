@@ -73,7 +73,7 @@ const SettingsPage = () => {
         </Card>
 
         <Card title="Notifications">
-          <Field label="Telegram" value="@your_handle" sub="Connected to @iluminate_bot" />
+          <Field label="Telegram" value="Not configured" sub="Integration unavailable in current build." />
           <div>
             <label className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-mono">Email</label>
             <Input className="mt-2 bg-background/40" placeholder="you@domain.com" />
@@ -81,11 +81,11 @@ const SettingsPage = () => {
         </Card>
 
         <Card title="Data sources">
-          <Source name="STON.fi /v1/pools" desc="Live prices · APY" status="ok" />
-          <Source name="STON.fi /v1/wallets/.../lp_positions" desc="Active LPs" status="ok" />
-          <Source name="STON.fi /v1/stats/fee_accruals" desc="Fees earned" status="ok" />
-          <Source name="Omniston SDK · WebSocket" desc="Best-route discovery" status="ok" />
-          <Source name="TON RPC" desc="Deposit block lookup" status="ok" />
+          <Source name="STON.fi /v1/wallets/{address}/pools" desc="Live wallet LP positions" status="ok" />
+          <Source name="STON.fi /v1/assets" desc="Asset symbols and market references" status="ok" />
+          <Source name="STON.fi /v1/pools/by_asset_pair" desc="Pool APY lookups for simulator pools" status="ok" />
+          <Source name="STON.fi SDK simulation endpoints" desc="Swap and liquidity transaction parameters" status="ok" />
+          <Source name="TON RPC" desc="On-chain transaction delivery through wallet signatures" status="ok" />
         </Card>
       </div>
     </AppLayout>

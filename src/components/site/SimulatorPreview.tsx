@@ -1,22 +1,41 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Section } from "./Section";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { fetchPoolApys } from "@/lib/ston";
 
 export const SimulatorPreview = () => {
   const [amount, setAmount] = useState(5000);
   const [pct, setPct] = useState(0); // -80 to +200
+  const [apy, setApy] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadApy = async () => {
+      const apyMap = await fetchPoolApys(["TON / USDT"]);
+      if (!cancelled) {
+        setApy(apyMap["TON / USDT"] ?? null);
+      }
+    };
+
+    loadApy();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const { il, fees, net } = useMemo(() => {
     const r = 1 + pct / 100;
     const ilPct = (2 * Math.sqrt(r)) / (1 + r) - 1; // negative
     const il = amount * ilPct;
-    const fees = amount * 0.18 * (90 / 365); // 18% APY 90d
-    const net = il + fees;
+    const fees = apy === null ? null : amount * (apy / 100) * (90 / 365);
+    const net = fees === null ? null : il + fees;
     return { il, fees, net };
-  }, [amount, pct]);
+  }, [amount, pct, apy]);
 
   const fmt = (n: number) =>
     `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -25,7 +44,7 @@ export const SimulatorPreview = () => {
     <Section
       eyebrow="IL Simulator"
       title={<>Model the outcome <em className="italic text-primary/90">before</em> you commit.</>}
-      description="Pick a pool, set an amount, slide the price. See the exact impermanent loss, projected fees, and final P&L — instantly."
+      description="Preview scenario outcomes with live APY where available. Unavailable metrics are labeled explicitly."
     >
       <div className="mt-16 mx-auto max-w-5xl">
         <div className="relative">
@@ -44,7 +63,9 @@ export const SimulatorPreview = () => {
                       </div>
                       <span className="font-medium">TON / USDT</span>
                     </div>
-                    <span className="font-mono text-xs text-muted-foreground">18.4% APY</span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {apy === null ? "APY unavailable" : `${apy.toFixed(1)}% APY`}
+                    </span>
                   </div>
                 </div>
 
@@ -89,12 +110,16 @@ export const SimulatorPreview = () => {
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Projected outcome · 90 days</div>
 
                 <Row label="Impermanent loss" value={fmt(il)} tone="bad" />
-                <Row label="Fees earned (est.)" value={fmt(fees)} tone="good" />
+                <Row
+                  label="Fees earned (est.)"
+                  value={fees === null ? "Unavailable" : fmt(fees)}
+                  tone="good"
+                />
                 <div className="my-5 hairline" />
                 <div className="flex items-end justify-between">
                   <span className="text-sm text-muted-foreground">Net P&L</span>
-                  <span className={`font-serif-display text-4xl ${net >= 0 ? "text-success" : "text-destructive"}`}>
-                    {fmt(net)}
+                  <span className={`font-serif-display text-4xl ${net === null ? "text-muted-foreground" : net >= 0 ? "text-success" : "text-destructive"}`}>
+                    {net === null ? "Unavailable" : fmt(net)}
                   </span>
                 </div>
 
@@ -115,7 +140,17 @@ export const SimulatorPreview = () => {
 const Row = ({ label, value, tone }: { label: string; value: string; tone: "good" | "bad" }) => (
   <div className="mt-4 flex items-center justify-between">
     <span className="text-sm text-muted-foreground">{label}</span>
-    <span className={`font-mono text-base ${tone === "good" ? "text-success" : "text-destructive"}`}>{value}</span>
+    <span
+      className={`font-mono text-base ${
+        value === "Unavailable"
+          ? "text-muted-foreground"
+          : tone === "good"
+          ? "text-success"
+          : "text-destructive"
+      }`}
+    >
+      {value}
+    </span>
   </div>
 );
 
