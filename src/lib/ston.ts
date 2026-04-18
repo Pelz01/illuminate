@@ -141,7 +141,7 @@ export const buildTonToJettonSwap = async ({
 }) => {
   const resolvedAssets = assets ?? (await apiClient.getAssets());
   const askAddress = resolveAssetAddress(resolvedAssets, targetSymbol);
-  const offerUnits = toUnits(offerTonAmount, 9).toString();
+  const offerUnits = toUnits(offerTonAmount.toString(), 9).toString();
 
   const simulationResult = await apiClient.simulateSwap({
     offerAddress: "ton",
@@ -192,7 +192,7 @@ export const buildOpenPositionTransaction = async ({
   const assets = await apiClient.getAssets();
   const tonUsdPrice = getTonUsdPrice(assets);
   const offerTonAmount = usdToTonAmount(depositUsd, tonUsdPrice);
-  const offerUnits = toUnits(offerTonAmount, 9).toString();
+  const offerUnits = toUnits(offerTonAmount.toString(), 9).toString();
   const [base, quote] = parsePoolSymbols(poolName);
 
   const tokenAAddress = resolveAssetAddress(assets, base);
@@ -200,7 +200,7 @@ export const buildOpenPositionTransaction = async ({
   const poolContainsTon = tokenAAddress === "ton" || tokenBAddress === "ton";
 
   if (!poolContainsTon) {
-    const targetSymbol = base;
+    const targetSymbol = base as Exclude<PoolTokenSymbol, "TON">;
     const swapResult = await buildTonToJettonSwap({
       targetSymbol,
       walletAddress,
@@ -228,12 +228,25 @@ export const buildOpenPositionTransaction = async ({
   const chosenPool = pickBestPool(pools);
   const tonIsTokenA = chosenPool.token0Address === "ton";
 
-  const liquiditySimulation = await apiClient.simulateLiquidityProvision({
-    provisionType: "Balanced",
-    poolAddress: chosenPool.address,
-    slippageTolerance,
-    ...(tonIsTokenA ? { tokenAUnits: offerUnits } : { tokenBUnits: offerUnits }),
-  });
+  const liquiditySimulation = await apiClient.simulateLiquidityProvision(
+    (tonIsTokenA
+      ? {
+          provisionType: "Balanced",
+          poolAddress: chosenPool.address,
+          slippageTolerance,
+          tokenA: tokenAAddress,
+          tokenB: tokenBAddress,
+          tokenAUnits: offerUnits,
+        }
+      : {
+          provisionType: "Balanced",
+          poolAddress: chosenPool.address,
+          slippageTolerance,
+          tokenA: tokenAAddress,
+          tokenB: tokenBAddress,
+          tokenBUnits: offerUnits,
+        }) as Parameters<typeof apiClient.simulateLiquidityProvision>[0]
+  );
 
   const dexContracts = dexFactory(liquiditySimulation.router);
   const router = tonClient.open(
@@ -253,7 +266,7 @@ export const buildOpenPositionTransaction = async ({
   };
 
   if (typeof router.getSingleSideProvideLiquidityTonTxParams !== "function") {
-    const targetSymbol = tonIsTokenA ? quote : base;
+    const targetSymbol = (tonIsTokenA ? quote : base) as Exclude<PoolTokenSymbol, "TON">;
     const swapResult = await buildTonToJettonSwap({
       targetSymbol,
       walletAddress,

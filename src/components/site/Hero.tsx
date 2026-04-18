@@ -27,14 +27,14 @@ export const Hero = () => {
           </div>
 
           <h1 className="reveal reveal-delay-1 mt-8 font-serif-display text-5xl leading-[1.02] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            See what your <em className="text-gradient-amber not-italic">liquidity</em>
+            STON.fi shows you <em className="text-gradient-amber not-italic">numbers.</em>
             <br />
-            <span className="italic text-foreground/90">is really doing.</span>
+            <span className="italic text-foreground/90">ILuminate tells you what to do.</span>
           </h1>
 
           <p className="reveal reveal-delay-2 mx-auto mt-7 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-            The first LP position manager on TON that shows you the truth — impermanent loss,
-            real net returns, and exactly when to act.
+            The decision layer on top of STON.fi — combining IL, fees, and net returns into one
+            clear picture, with one-click action via Omniston.
           </p>
 
           <div className="reveal reveal-delay-3 mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -50,9 +50,9 @@ export const Hero = () => {
           </div>
 
           <div className="reveal reveal-delay-4 mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
-            <span>LP position tracking</span>
+            <span>Hold vs LP chart</span>
             <Dot />
-            <span>Real-time IL</span>
+            <span>Net return score</span>
             <Dot />
             <span>Smart exit alerts</span>
             <Dot />
