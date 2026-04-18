@@ -73,19 +73,24 @@ export const useStonWalletPositions = (walletAddress?: string) => {
     queryKey: ["ston-wallet-positions", walletAddress],
     enabled: Boolean(walletAddress),
     queryFn: async () => {
-      const [assets, walletPools, walletOperations] = await Promise.all([
+      const [assets, walletPools] = await Promise.all([
         apiClient.getAssets(),
         apiClient.getWalletPools({
           walletAddress: walletAddress!,
           dexV2: true,
         }),
-        apiClient.getWalletOperations({
-          walletAddress: walletAddress!,
-          since: OPERATION_LOOKBACK_START,
-          until: new Date(),
-          dexV2: true,
-        }),
       ]);
+
+      if (walletPools.length === 0) {
+        return [];
+      }
+
+      const walletOperations = await apiClient.getWalletOperations({
+        walletAddress: walletAddress!,
+        since: OPERATION_LOOKBACK_START,
+        until: new Date(),
+        dexV2: true,
+      });
 
       const assetsByAddress = new Map<string, AssetInfo>();
       for (const asset of assets) {

@@ -31,20 +31,28 @@ const DashboardPage = () => {
 
   const hasPortfolioValue = positionsWithValue.length > 0;
   const hasNetVsHold = positionsWithNetVsHold.length > 0;
-  const portfolioSub = connected
-    ? `${positions.length} active position${positions.length === 1 ? "" : "s"}`
-    : "Connect wallet to load live data";
-  const ilSub = connected
-    ? "Not provided by /wallets/{address}/pools"
-    : "Connect wallet to load live data";
-  const feesSub = connected
-    ? "Not provided by /wallets/{address}/pools"
-    : "Connect wallet to load live data";
-  const netSub = connected
-    ? hasNetVsHold
+  const portfolioSub = !connected
+    ? "Connect wallet to load live data"
+    : isLoading
+    ? "Loading wallet data..."
+    : `${positions.length} active position${positions.length === 1 ? "" : "s"}`;
+  const ilSub = !connected
+    ? "Connect wallet to load live data"
+    : isLoading
+    ? "Loading wallet data..."
+    : "Requires historical entry snapshots";
+  const feesSub = !connected
+    ? "Connect wallet to load live data"
+    : isLoading
+    ? "Loading wallet data..."
+    : "Requires realized fee attribution";
+  const netSub = !connected
+    ? "Connect wallet to load live data"
+    : isLoading
+    ? "Loading wallet data..."
+    : hasNetVsHold
       ? "LP value vs hold baseline from live add/withdraw operations"
-      : "Insufficient liquidity operation history for attribution"
-    : "Connect wallet to load live data";
+      : "Insufficient liquidity operation history for attribution";
 
   const dashboardPositions = [...positions].sort((a, b) => {
     const aValue = a.valueUsd ?? -1;
