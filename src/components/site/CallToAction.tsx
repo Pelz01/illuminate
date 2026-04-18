@@ -12,10 +12,10 @@ export const CallToAction = () => (
 
         <p className="text-xs uppercase tracking-[0.3em] text-primary/90 font-mono">Get started</p>
         <h2 className="mt-5 mx-auto max-w-3xl font-serif-display text-4xl md:text-6xl leading-[1.05] text-gradient">
-          Stop guessing what your LP <em className="italic">is doing.</em>
+          Stop reading numbers. <em className="italic">Start making moves.</em>
         </h2>
         <p className="mt-5 mx-auto max-w-xl text-muted-foreground">
-          Connect your TON wallet. See every position, every IL number, every alert — in under ten seconds.
+          Connect your TON wallet. ILuminate reads your STON.fi positions, surfaces the truth, and lets you act — in under ten seconds.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button variant="luminous" size="xl" className="group" asChild>
