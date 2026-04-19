@@ -1,5 +1,4 @@
 import { StonApiClient, type AssetInfo } from "@ston-fi/api";
-import { Client, dexFactory, toUnits } from "@ston-fi/sdk";
 
 export type SupportedPoolName =
   | "TON / USDT"
@@ -13,9 +12,26 @@ const TONCENTER_MAINNET = "https://toncenter.com/api/v2/jsonRPC";
 const DEFAULT_SLIPPAGE = "0.01";
 
 const apiClient = new StonApiClient();
-const tonClient = new Client({
-  endpoint: TONCENTER_MAINNET,
-});
+type StonSdkModule = typeof import("@ston-fi/sdk");
+
+let sdkPromise: Promise<StonSdkModule> | null = null;
+let tonClientPromise: Promise<import("@ston-fi/sdk").Client> | null = null;
+
+const getSdk = () => {
+  sdkPromise ??= import("@ston-fi/sdk");
+  return sdkPromise;
+};
+
+const getTonClient = async () => {
+  tonClientPromise ??= (async () => {
+    const { Client } = await getSdk();
+    return new Client({
+      endpoint: TONCENTER_MAINNET,
+    });
+  })();
+
+  return tonClientPromise;
+};
 
 const symbolAliases: Record<PoolTokenSymbol, string[]> = {
   TON: ["TON"],
@@ -139,6 +155,10 @@ export const buildTonToJettonSwap = async ({
   slippageTolerance?: string;
   assets?: AssetInfo[];
 }) => {
+  const [{ toUnits, dexFactory }, tonClient] = await Promise.all([
+    getSdk(),
+    getTonClient(),
+  ]);
   const resolvedAssets = assets ?? (await apiClient.getAssets());
   const askAddress = resolveAssetAddress(resolvedAssets, targetSymbol);
   const offerUnits = toUnits(offerTonAmount.toString(), 9).toString();
@@ -185,6 +205,10 @@ export const buildOpenPositionTransaction = async ({
   depositUsd: number;
   slippageTolerance?: string;
 }) => {
+  const [{ toUnits, dexFactory }, tonClient] = await Promise.all([
+    getSdk(),
+    getTonClient(),
+  ]);
   if (!Number.isFinite(depositUsd) || depositUsd <= 0) {
     throw new Error("Deposit amount must be greater than 0.");
   }

@@ -98,7 +98,13 @@
     background-image:
       radial-gradient(ellipse 80% 50% at 50% -10%, hsl(38 95% 60% / 0.08), transparent 60%),
       radial-gradient(ellipse 60% 50% at 100% 100%, hsl(220 70% 40% / 0.05), transparent 60%);
-    background-attachment: fixed;
+    background-attachment: scroll;
+  }
+
+  @media (min-width: 1024px) {
+    body {
+      background-attachment: fixed;
+    }
   }
 
   ::selection {

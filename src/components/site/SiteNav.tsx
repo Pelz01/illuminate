@@ -17,10 +17,27 @@ export const SiteNav = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
+    let rafId = 0;
+
+    const updateScrolled = () => {
+      const next = window.scrollY > 12;
+      setScrolled((prev) => (prev === next ? prev : next));
+      rafId = 0;
+    };
+
+    const onScroll = () => {
+      if (rafId !== 0) return;
+      rafId = window.requestAnimationFrame(updateScrolled);
+    };
+
+    updateScrolled();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId !== 0) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
