@@ -9,6 +9,7 @@ import {
 const apiClient = new StonApiClient();
 const OPERATION_LOOKBACK_DAYS = 180;
 const OPERATION_LOOKBACK_MS = OPERATION_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+const MAX_POSITIONS_RETURNED = 200;
 
 type WalletPool = PoolInfo;
 
@@ -51,6 +52,11 @@ const computePositionValueUsd = (pool: WalletPool) => {
   return (lpBalance / lpTotalSupply) * lpTotalSupplyUsd;
 };
 
+const hasActiveLpBalance = (pool: WalletPool) => {
+  const lpBalance = safeNumber(pool.lpBalance);
+  return lpBalance !== null && lpBalance > 0;
+};
+
 type PoolTokenFlow = {
   token0: number;
   token1: number;
@@ -89,12 +95,13 @@ export const useStonWalletPositions = (walletAddress?: string) => {
         }),
       ]);
 
-      if (walletPools.length === 0) {
+      const activeWalletPools = walletPools.filter(hasActiveLpBalance);
+      if (activeWalletPools.length === 0) {
         return [];
       }
 
       const activePoolKeys = new Set(
-        walletPools.map((pool) => normalizeAddress(pool.address))
+        activeWalletPools.map((pool) => normalizeAddress(pool.address))
       );
       const until = new Date();
       const since = new Date(until.getTime() - OPERATION_LOOKBACK_MS);
@@ -151,7 +158,7 @@ export const useStonWalletPositions = (walletAddress?: string) => {
         opCountByPool.set(poolKey, (opCountByPool.get(poolKey) ?? 0) + 1);
       }
 
-      const positions: WalletPosition[] = walletPools.map((pool) => {
+      const positions: WalletPosition[] = activeWalletPools.map((pool) => {
         const token0Symbol = formatSymbol(pool.token0Address, assetsByAddress);
         const token1Symbol = formatSymbol(pool.token1Address, assetsByAddress);
         const pair = `${token0Symbol} / ${token1Symbol}`;
@@ -199,7 +206,13 @@ export const useStonWalletPositions = (walletAddress?: string) => {
         };
       });
 
-      return positions;
+      const rankedPositions = [...positions].sort((a, b) => {
+        const aSort = a.valueUsd ?? a.holdValueUsd ?? -1;
+        const bSort = b.valueUsd ?? b.holdValueUsd ?? -1;
+        return bSort - aSort;
+      });
+
+      return rankedPositions.slice(0, MAX_POSITIONS_RETURNED);
     },
   });
 };

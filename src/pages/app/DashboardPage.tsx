@@ -1,12 +1,7 @@
 import AppLayout from "@/components/app/AppLayout";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  BellRing,
-  Repeat,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
 import { useStonWalletPositions } from "@/hooks/use-ston-wallet-positions";
 
@@ -40,19 +35,19 @@ const DashboardPage = () => {
     ? "Connect wallet to load live data"
     : isLoading
     ? "Loading wallet data..."
-    : "Requires historical entry snapshots";
+    : "Not available in live API yet";
   const feesSub = !connected
     ? "Connect wallet to load live data"
     : isLoading
     ? "Loading wallet data..."
-    : "Requires realized fee attribution";
+    : "Not available in live API yet";
   const netSub = !connected
     ? "Connect wallet to load live data"
     : isLoading
     ? "Loading wallet data..."
     : hasNetVsHold
-      ? "LP value vs hold baseline from live add/withdraw operations"
-      : "Insufficient liquidity operation history for attribution";
+      ? "From recent add/withdraw history"
+      : "Need more liquidity history";
 
   const dashboardPositions = [...positions].sort((a, b) => {
     const aValue = a.valueUsd ?? -1;
@@ -114,21 +109,19 @@ const DashboardPage = () => {
         />
       </div>
 
-      {/* Hold vs LP chart */}
-      <div className="mt-8 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+      {/* Live status */}
+      <div className="mt-8">
         <div className="glass-card rounded-3xl p-6 md:p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Live data status
-              </div>
-              <div className="mt-1 font-serif-display text-2xl">
-                {isLoading
-                  ? "Loading STON.fi wallet positions..."
-                  : connected
-                  ? "Wallet pools loaded from /v1/wallets/{address}/pools"
-                  : "Connect wallet to start live position tracking"}
-              </div>
+          <div>
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Live data status
+            </div>
+            <div className="mt-1 font-serif-display text-2xl">
+              {isLoading
+                ? "Loading STON.fi wallet positions..."
+                : connected
+                ? "Wallet positions loaded"
+                : "Connect wallet to start live position tracking"}
             </div>
           </div>
           <div className="mt-6 rounded-2xl border border-border/60 bg-background/40 p-5">
@@ -136,30 +129,11 @@ const DashboardPage = () => {
               Unavailable metrics
             </div>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li>Hold vs LP chart requires historical deposit snapshots.</li>
-              <li>IL and fees remain unavailable until full attribution is enabled.</li>
-              <li>Net vs hold uses live add/withdraw liquidity operations when present.</li>
+              <li>Hold vs LP chart needs historical snapshots.</li>
+              <li>IL and fees attribution are not live yet.</li>
+              <li>Net vs hold uses recent add/withdraw history.</li>
             </ul>
           </div>
-        </div>
-
-        {/* Quick actions */}
-        <div className="space-y-4">
-          <ActionCard
-            icon={BellRing}
-            title="Alerts configuration available"
-            body="Threshold and channels can be configured. Live alert firing stays disabled until attribution is active."
-            cta="Review alerts"
-            to="/app/alerts"
-          />
-          <ActionCard
-            icon={Repeat}
-            title="Rebalance module pending"
-            body="Live recommendation output is unavailable until wallet-level attribution can produce non-static actions."
-            cta="Open rebalance"
-            to="/app/rebalance"
-            highlight
-          />
         </div>
       </div>
 
@@ -179,32 +153,34 @@ const DashboardPage = () => {
           </Button>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-border/60 glass-card">
-          <div className="hidden md:grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-3 border-b border-border/60 bg-secondary/30 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span>Pool</span>
-            <span className="text-right">Value</span>
-            <span className="text-right">IL</span>
-            <span className="text-right">Fees</span>
-            <span className="text-right">Net</span>
-            <span className="w-24 text-right">Status</span>
+        <div className="overflow-x-auto rounded-2xl border border-border/60 glass-card">
+          <div className="min-w-[980px]">
+            <div className="hidden md:grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-3 border-b border-border/60 bg-secondary/30 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              <span>Pool</span>
+              <span className="text-right">Value</span>
+              <span className="text-right">IL</span>
+              <span className="text-right">Fees</span>
+              <span className="text-right">Net</span>
+              <span className="w-24 text-right">Status</span>
+            </div>
+
+            {isLoading && (
+              <div className="px-6 py-5 text-sm text-muted-foreground">
+                Loading wallet positions...
+              </div>
+            )}
+
+            {!isLoading && connected && dashboardPositions.length === 0 && (
+              <div className="px-6 py-5 text-sm text-muted-foreground">
+                No STON.fi liquidity positions found for this wallet.
+              </div>
+            )}
+
+            {!isLoading &&
+              dashboardPositions.map((position) => (
+                <PositionRow key={position.poolAddress} position={position} />
+              ))}
           </div>
-
-          {isLoading && (
-            <div className="px-6 py-5 text-sm text-muted-foreground">
-              Loading wallet positions...
-            </div>
-          )}
-
-          {!isLoading && connected && dashboardPositions.length === 0 && (
-            <div className="px-6 py-5 text-sm text-muted-foreground">
-              No STON.fi liquidity positions found for this wallet.
-            </div>
-          )}
-
-          {!isLoading &&
-            dashboardPositions.map((position) => (
-              <PositionRow key={position.poolAddress} position={position} />
-            ))}
         </div>
       </div>
     </AppLayout>
@@ -251,49 +227,10 @@ const KPI = ({
     >
       {value}
     </div>
-    <div className="mt-1 text-xs font-mono text-muted-foreground/80">{sub}</div>
-  </div>
-);
-
-const ActionCard = ({
-  icon: Icon,
-  title,
-  body,
-  cta,
-  to,
-  highlight,
-}: {
-  icon: typeof BellRing;
-  title: string;
-  body: string;
-  cta: string;
-  to: string;
-  highlight?: boolean;
-}) => (
-  <Link
-    to={to}
-    className={`group block rounded-2xl p-6 transition-all hover:-translate-y-0.5 ${
-      highlight ? "glass-card border border-primary/30" : "glass-card"
-    }`}
-  >
-    <div className="flex items-center gap-3">
-      <span
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${
-          highlight
-            ? "bg-gradient-amber text-primary-foreground shadow-glow-sm"
-            : "bg-secondary/60 text-foreground"
-        }`}
-      >
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="font-serif-display text-xl">{title}</span>
-      <ArrowUpRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+    <div className="mt-1 min-h-10 text-xs font-mono leading-relaxed text-muted-foreground/80 whitespace-normal break-words">
+      {sub}
     </div>
-    <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{body}</p>
-    <span className="mt-4 inline-block text-xs font-mono uppercase tracking-[0.2em] text-primary/90">
-      {cta} -&gt;
-    </span>
-  </Link>
+  </div>
 );
 
 const PositionRow = ({
