@@ -35,19 +35,19 @@ const DashboardPage = () => {
     ? "Connect wallet to load live data"
     : isLoading
     ? "Loading wallet data..."
-    : "Not available in live API yet";
+    : "Coming soon";
   const feesSub = !connected
     ? "Connect wallet to load live data"
     : isLoading
     ? "Loading wallet data..."
-    : "Not available in live API yet";
+    : "Coming soon";
   const netSub = !connected
     ? "Connect wallet to load live data"
     : isLoading
     ? "Loading wallet data..."
     : hasNetVsHold
       ? "From recent add/withdraw history"
-      : "Need more liquidity history";
+      : "Coming soon";
 
   const dashboardPositions = [...positions].sort((a, b) => {
     const aValue = a.valueUsd ?? -1;
@@ -78,25 +78,37 @@ const DashboardPage = () => {
       <div className="grid gap-4 md:grid-cols-4">
         <KPI
           label="Portfolio value"
-          value={hasPortfolioValue ? fmt(totalValue) : "Unavailable"}
+          value={
+            hasPortfolioValue
+              ? fmt(totalValue)
+              : connected && !isLoading
+              ? "Coming soon"
+              : "Unavailable"
+          }
           sub={portfolioSub}
           tone="neutral"
         />
         <KPI
           label="Impermanent loss"
-          value="Unavailable"
+          value={connected && !isLoading ? "Coming soon" : "Unavailable"}
           sub={ilSub}
           tone="neutral"
         />
         <KPI
           label="Fees earned"
-          value="Unavailable"
+          value={connected && !isLoading ? "Coming soon" : "Unavailable"}
           sub={feesSub}
           tone="neutral"
         />
         <KPI
           label="Net return"
-          value={hasNetVsHold ? fmt(totalNetVsHold) : "Unavailable"}
+          value={
+            hasNetVsHold
+              ? fmt(totalNetVsHold)
+              : connected && !isLoading
+              ? "Coming soon"
+              : "Unavailable"
+          }
           sub={netSub}
           tone={
             hasNetVsHold
