@@ -4,26 +4,26 @@ import { LayoutDashboard, LineChart, Target, BellRing } from "lucide-react";
 const features = [
   {
     icon: LayoutDashboard,
-    title: "Position dashboard",
-    body: "Connect via TonConnect. Active STON.fi LP positions load from live API endpoints — pair, current value, and APY where available.",
+    title: "Live wallet dashboard",
+    body: "Live now: connect with TonConnect and load active STON.fi LP positions, current value, and APY where the API returns it.",
     span: "md:col-span-2",
   },
   {
     icon: LineChart,
-    title: "Hold vs LP chart",
-    body: "Planned next: chart LP value against hold value once historical deposit indexing and pool history reconciliation are fully wired.",
+    title: "IL and fees attribution",
+    body: "Coming soon: position level impermanent loss and fee attribution after historical entry snapshots are fully wired.",
     span: "md:col-span-1",
   },
   {
     icon: Target,
-    title: "Net return score",
-    body: "Planned next: compute net return from realized fee accruals and IL attribution. Unavailable metrics are shown explicitly until this is live.",
+    title: "Net vs hold score",
+    body: "Coming soon: a single net score that combines value, IL, and fees against hold.",
     span: "md:col-span-1",
   },
   {
     icon: BellRing,
-    title: "Smart exit alert + one-click rebalance",
-    body: "Planned next: trigger alerts from live wallet data and execute rebalance routes from computed recommendations instead of static suggestions.",
+    title: "Alerts and rebalance actions",
+    body: "Coming soon: trigger alerts from wallet conditions and route rebalance actions directly from recommendations.",
     span: "md:col-span-2",
   },
 ];
@@ -32,7 +32,7 @@ export const Features = () => (
   <Section
     eyebrow="The Product · V1"
     title={<>Four features. <em className="italic text-primary/90">One outcome.</em></>}
-    description="Built on top of STON.fi, not instead of it. Live data is used where available, and unsupported metrics are labeled unavailable."
+    description="Built on top of STON.fi, not instead of it. What is live now is clear, and upcoming modules are labeled as coming soon."
   >
     <div className="mt-16 grid gap-4 md:grid-cols-3 md:auto-rows-fr">
       {features.map(({ icon: Icon, title, body, span }, i) => (

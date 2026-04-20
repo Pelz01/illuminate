@@ -33,8 +33,8 @@ export const Hero = () => {
           </h1>
 
           <p className="reveal reveal-delay-2 mx-auto mt-7 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-            ILuminate sits on top of STON.fi and turns scattered numbers into one clear picture —
-            so you stop guessing whether you'd be better off just holding.
+            ILuminate sits on top of STON.fi and turns scattered numbers into one clear picture,
+            so you stop guessing whether holding would perform better.
           </p>
 
           <div className="reveal reveal-delay-3 mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -50,13 +50,13 @@ export const Hero = () => {
           </div>
 
           <div className="reveal reveal-delay-4 mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
-            <span>Hold vs LP chart</span>
+            <span>Live wallet positions</span>
             <Dot />
-            <span>Net return score</span>
+            <span>Portfolio value and APY</span>
             <Dot />
-            <span>Smart exit alerts</span>
+            <span>IL and fees attribution coming soon</span>
             <Dot />
-            <span>One-click rebalance</span>
+            <span>Alerts and rebalance coming soon</span>
           </div>
         </div>
 
@@ -89,14 +89,14 @@ const DashboardPreview = () => (
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          <Stat label="Position value" value="$12,847.20" delta="+$1,204" positive />
-          <Stat label="Impermanent loss" value="−$386.50" delta="−3.0%" />
-          <Stat label="Net return" value="+$818.70" delta="vs hold +6.4%" positive />
+          <Stat label="Position value" value="$12,847.20" delta="+$1,204 this month" tone="good" />
+          <Stat label="Impermanent loss" value="−$386.50" delta="−3.0%" tone="bad" />
+          <Stat label="Net return" value="+$818.70" delta="vs hold +6.4%" tone="good" />
         </div>
 
         <div className="mt-8 rounded-xl border border-border/60 bg-background/40 p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Hold vs LP — 30D</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Hold vs LP · 30D</span>
             <span className="text-xs text-success">LP outperforming</span>
           </div>
           <MiniChart />
@@ -106,11 +106,27 @@ const DashboardPreview = () => (
   </div>
 );
 
-const Stat = ({ label, value, delta, positive }: { label: string; value: string; delta: string; positive?: boolean }) => (
+const Stat = ({
+  label,
+  value,
+  delta,
+  tone = "muted",
+}: {
+  label: string;
+  value: string;
+  delta: string;
+  tone?: "good" | "bad" | "muted";
+}) => (
   <div>
     <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">{label}</div>
     <div className="mt-2 font-serif-display text-3xl">{value}</div>
-    <div className={`mt-1 text-xs font-mono ${positive ? "text-success" : "text-destructive"}`}>{delta}</div>
+    <div
+      className={`mt-1 text-xs font-mono ${
+        tone === "good" ? "text-success" : tone === "bad" ? "text-destructive" : "text-muted-foreground"
+      }`}
+    >
+      {delta}
+    </div>
   </div>
 );
 

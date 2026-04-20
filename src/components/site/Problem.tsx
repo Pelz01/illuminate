@@ -15,12 +15,12 @@ const problems = [
   {
     icon: BellOff,
     title: "No early warning system",
-    body: "Nothing on TON today monitors your LP in real time and tells you when impermanent loss has grown large enough to act on. That gap is what we close.",
+    body: "Wallet level LP alerts are still missing for most users on TON. Teams still need faster warnings before losses compound.",
   },
   {
     icon: ArrowRightLeft,
     title: "Acting requires leaving",
-    body: "Even when you spot a problem, fixing it means navigating to a DEX, hunting for the best route manually, executing multiple transactions. Friction wins.",
+    body: "Even when you spot a problem, you still jump across tools, compare routes manually, and execute multiple steps. Friction wins.",
   },
 ];
 
@@ -28,7 +28,7 @@ export const Problem = () => (
   <Section
     eyebrow="The Problem"
     title={<>Liquidity providers on TON <em className="italic text-primary/90">are flying blind.</em></>}
-    description="Here's what providing liquidity on STON.fi looks like today — and why most providers don't realize they're losing money until they withdraw."
+    description="Here is what providing liquidity on STON.fi looks like today, and why most providers only discover losses when they withdraw."
   >
     <div className="mt-16 grid gap-px rounded-2xl overflow-hidden border border-border/60 md:grid-cols-2 bg-border/40">
       {problems.map(({ icon: Icon, title, body }) => (

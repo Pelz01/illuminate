@@ -11,10 +11,10 @@ export const SiteFooter = () => {
             <span className="font-serif-display text-xl">ILuminate</span>
           </Link>
           <p className="mt-4 text-sm text-muted-foreground max-w-xs leading-relaxed">
-            STON.fi shows you numbers. ILuminate tells you what to do — the decision layer for TON liquidity.
+            ILuminate gives LPs a clear live view of STON.fi positions, with attribution, alerts, and rebalance modules rolling out next.
           </p>
           <p className="mt-6 text-xs text-muted-foreground/70 font-mono">
-            illuminate.app · TON · 2026
+            ILuminate · TON · 2026
           </p>
         </div>
 

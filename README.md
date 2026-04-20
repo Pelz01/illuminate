@@ -1,16 +1,18 @@
 # ILuminate
 
-ILuminate is a TON/STON.fi-focused web app for liquidity provider visibility and decision support.
+ILuminate is a TON and STON.fi focused web app for liquidity provider visibility and decision support.
 
 Current build priorities are:
 - Live wallet LP position visibility from STON.fi APIs
-- Safe wallet-connected flows through TonConnect
+- Clear product status messaging so live and coming-soon modules are easy to spot
+- Safe wallet connected flows through TonConnect
 
 ## What It Does Today
 
 ### Live wallet pages
 - Connect a TON wallet with TonConnect
 - Load live LP positions from STON.fi
+- Show a desktop-collapsible workspace sidebar and mobile slide-out navigation
 - Show per-position:
   - pair, APY, current value
   - hold baseline (derived)
@@ -28,15 +30,15 @@ Current build priorities are:
 - Public simulator (`/simulator`) with live APY lookups where available
 - App simulator (`/app/simulator`) can prepare transaction params via STON SDK and send through TonConnect
 
-## Intentionally Unavailable (Current Scope)
+## Coming Soon (Current Scope)
 
-These are intentionally not faked in UI:
+These modules are intentionally not faked in UI:
 - Full impermanent loss attribution
 - Realized fees attribution
 - Live alert firing logic
 - Live rebalance recommendation engine
 
-The app surfaces these as unavailable/pending instead of returning mock data.
+The app surfaces these as "Coming soon" or "Unavailable" instead of returning mock data.
 
 ## Tech Stack
 

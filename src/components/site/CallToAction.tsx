@@ -15,7 +15,7 @@ export const CallToAction = () => (
           Stop reading numbers. <em className="italic">Start making moves.</em>
         </h2>
         <p className="mt-5 mx-auto max-w-xl text-muted-foreground">
-          Connect your TON wallet. ILuminate reads your STON.fi positions, surfaces the truth, and lets you act — in under ten seconds.
+          Connect your TON wallet. ILuminate loads your STON.fi positions, value, and APY in seconds. Attribution and action modules are marked clearly as coming soon.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button variant="luminous" size="xl" className="group" asChild>
