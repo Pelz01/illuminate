@@ -50,8 +50,8 @@ const AlertsPage = () => {
             <Channel label="In-app push" desc="Browser & mobile" checked={push} onChange={setPush} />
             <Channel label="Telegram bot" desc="Channel not configured yet" checked={tg} onChange={setTg} />
             <Channel label="Email digest" desc="Daily summary" checked={email} onChange={setEmail} />
-            <Button variant="luminous" className="w-full mt-2">
-              Save preferences
+            <Button variant="luminous" className="w-full mt-2" disabled>
+              Coming soon
             </Button>
           </div>
         </div>

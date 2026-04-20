@@ -4,21 +4,19 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import DashboardPage from "./pages/app/DashboardPage.tsx";
+import PositionsPage from "./pages/app/PositionsPage.tsx";
+import AlertsPage from "./pages/app/AlertsPage.tsx";
+import RebalancePage from "./pages/app/RebalancePage.tsx";
+import SettingsPage from "./pages/app/SettingsPage.tsx";
+import AppSimulatorPage from "./pages/app/AppSimulatorPage.tsx";
+import TonProviderLayout from "./components/app/TonProviderLayout.tsx";
 
 const Index = lazy(() => import("./pages/Index.tsx"));
 const FeaturesPage = lazy(() => import("./pages/FeaturesPage.tsx"));
 const SimulatorPage = lazy(() => import("./pages/SimulatorPage.tsx"));
 const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
-const DashboardPage = lazy(() => import("./pages/app/DashboardPage.tsx"));
-const PositionsPage = lazy(() => import("./pages/app/PositionsPage.tsx"));
-const AlertsPage = lazy(() => import("./pages/app/AlertsPage.tsx"));
-const RebalancePage = lazy(() => import("./pages/app/RebalancePage.tsx"));
-const SettingsPage = lazy(() => import("./pages/app/SettingsPage.tsx"));
-const AppSimulatorPage = lazy(() => import("./pages/app/AppSimulatorPage.tsx"));
-const TonProviderLayout = lazy(
-  () => import("./components/app/TonProviderLayout.tsx")
-);
 
 const queryClient = new QueryClient({
   defaultOptions: {

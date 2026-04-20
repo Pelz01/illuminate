@@ -10,6 +10,8 @@ type PoolTokenSymbol = "TON" | "USDT" | "NOT" | "STON" | "DOGS";
 
 const TONCENTER_MAINNET = "https://toncenter.com/api/v2/jsonRPC";
 const DEFAULT_SLIPPAGE = "0.01";
+const TON_ASSET_ALIAS = "ton";
+const TON_ASSET_CONTRACT = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c";
 
 const apiClient = new StonApiClient();
 type StonSdkModule = typeof import("@ston-fi/sdk");
@@ -35,7 +37,7 @@ const getTonClient = async () => {
 
 const symbolAliases: Record<PoolTokenSymbol, string[]> = {
   TON: ["TON"],
-  USDT: ["USDT", "jUSDT"],
+  USDT: ["USD₮", "USDT", "jUSDT"],
   NOT: ["NOT"],
   STON: ["STON"],
   DOGS: ["DOGS"],
@@ -50,19 +52,50 @@ const findAssetBySymbol = (assets: AssetInfo[], symbol: PoolTokenSymbol) => {
   const aliases = symbolAliases[symbol];
   if (!aliases) return null;
 
-  return (
-    assets.find((asset) => aliases.includes(asset.symbol)) ??
-    assets.find((asset) =>
-      aliases.some((alias) =>
-        asset.displayName?.toUpperCase().includes(alias.toUpperCase())
-      )
-    ) ??
-    null
+  const aliasMatcher = new RegExp(
+    aliases.map((alias) => alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
+    "i"
   );
+
+  const candidates = assets.filter((asset) => {
+    const symbolMatch = aliases.some(
+      (alias) => asset.symbol.toUpperCase() === alias.toUpperCase()
+    );
+    const displayNameMatch = aliasMatcher.test(asset.displayName ?? "");
+    return symbolMatch || displayNameMatch;
+  });
+
+  if (candidates.length === 0) return null;
+
+  const score = (asset: AssetInfo) => {
+    const tags = asset.tags ?? [];
+    const hasVeryHighLiquidity = tags.includes("asset:liquidity:very_high");
+    const hasHighLiquidity = tags.includes("asset:liquidity:high");
+    const hasEssential = tags.includes("asset:essential");
+    const hasPopular = tags.includes("asset:popular");
+    const hasNoLiquidity =
+      tags.includes("asset:liquidity:no") || tags.includes("no_liquidity");
+    const hasFake = tags.includes("asset:fake");
+
+    return (
+      (hasVeryHighLiquidity ? 1000 : 0) +
+      (hasHighLiquidity ? 200 : 0) +
+      (hasEssential ? 100 : 0) +
+      (hasPopular ? 60 : 0) +
+      (asset.defaultSymbol ? 40 : 0) +
+      (asset.priority ?? 0) * 2 +
+      (asset.popularityIndex ?? 0) -
+      (asset.deprecated ? 200 : 0) -
+      (hasNoLiquidity ? 120 : 0) -
+      (hasFake ? 200 : 0)
+    );
+  };
+
+  return [...candidates].sort((a, b) => score(b) - score(a))[0];
 };
 
 const resolveAssetAddress = (assets: AssetInfo[], symbol: PoolTokenSymbol) => {
-  if (symbol === "TON") return "ton";
+  if (symbol === "TON") return TON_ASSET_ALIAS;
 
   const asset = findAssetBySymbol(assets, symbol);
   if (!asset) {
@@ -71,6 +104,12 @@ const resolveAssetAddress = (assets: AssetInfo[], symbol: PoolTokenSymbol) => {
 
   return asset.contractAddress;
 };
+
+const toApiPairAddress = (assetAddress: string) =>
+  assetAddress === TON_ASSET_ALIAS ? TON_ASSET_CONTRACT : assetAddress;
+
+const isTonAddress = (assetAddress: string) =>
+  assetAddress === TON_ASSET_ALIAS || assetAddress === TON_ASSET_CONTRACT;
 
 const pickBestPool = <T extends { deprecated: boolean; volume24HUsd?: string }>(
   pools: T[]
@@ -112,9 +151,11 @@ export const fetchPoolApys = async (poolNames: SupportedPoolName[]) => {
     poolNames.map(async (poolName) => {
       try {
         const [base, quote] = parsePoolSymbols(poolName);
+        const baseAddress = resolveAssetAddress(assets, base);
+        const quoteAddress = resolveAssetAddress(assets, quote);
         const pools = await apiClient.getPoolsByAssetPair({
-          asset0Address: resolveAssetAddress(assets, base),
-          asset1Address: resolveAssetAddress(assets, quote),
+          asset0Address: toApiPairAddress(baseAddress),
+          asset1Address: toApiPairAddress(quoteAddress),
         });
 
         if (!pools.length) return;
@@ -221,7 +262,7 @@ export const buildOpenPositionTransaction = async ({
 
   const tokenAAddress = resolveAssetAddress(assets, base);
   const tokenBAddress = resolveAssetAddress(assets, quote);
-  const poolContainsTon = tokenAAddress === "ton" || tokenBAddress === "ton";
+  const poolContainsTon = isTonAddress(tokenAAddress) || isTonAddress(tokenBAddress);
 
   if (!poolContainsTon) {
     const targetSymbol = base as Exclude<PoolTokenSymbol, "TON">;
@@ -241,8 +282,8 @@ export const buildOpenPositionTransaction = async ({
   }
 
   const pools = await apiClient.getPoolsByAssetPair({
-    asset0Address: tokenAAddress,
-    asset1Address: tokenBAddress,
+    asset0Address: toApiPairAddress(tokenAAddress),
+    asset1Address: toApiPairAddress(tokenBAddress),
   });
 
   if (!pools.length) {
@@ -250,7 +291,7 @@ export const buildOpenPositionTransaction = async ({
   }
 
   const chosenPool = pickBestPool(pools);
-  const tonIsTokenA = chosenPool.token0Address === "ton";
+  const tonIsTokenA = isTonAddress(chosenPool.token0Address);
 
   const liquiditySimulation = await apiClient.simulateLiquidityProvision(
     (tonIsTokenA
