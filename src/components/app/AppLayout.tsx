@@ -1,6 +1,18 @@
 import { ReactNode, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Wallet, BellRing, Repeat, Settings, Calculator, Menu, X, ArrowUpRight } from "lucide-react";
+import {
+  LayoutDashboard,
+  Wallet,
+  BellRing,
+  Repeat,
+  Settings,
+  Calculator,
+  Menu,
+  X,
+  ArrowUpRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
@@ -16,6 +28,7 @@ const nav = [
 
 export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; title: string; subtitle?: string }) => {
   const [open, setOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const location = useLocation();
   const { connected, shortAddress, connect, disconnect } = useTonWalletSession();
 
@@ -40,8 +53,9 @@ export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; 
         {/* Sidebar */}
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-72 transform border-r border-border/60 bg-background/80 backdrop-blur-xl transition-transform duration-300 lg:translate-x-0",
-            open ? "translate-x-0" : "-translate-x-full"
+            "fixed inset-y-0 left-0 z-40 transform border-r border-border/60 bg-background/80 backdrop-blur-xl transition-all duration-300",
+            desktopCollapsed ? "lg:w-20" : "lg:w-72",
+            open ? "translate-x-0 w-72" : "-translate-x-full w-72 lg:translate-x-0"
           )}
         >
           <div className="flex h-16 items-center justify-between border-b border-border/60 px-6">
@@ -50,8 +64,15 @@ export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; 
                 <span className="absolute inset-0 rounded-full bg-gradient-amber blur-md opacity-70" />
                 <span className="relative h-3 w-3 rounded-full bg-gradient-amber shadow-glow-sm" />
               </span>
-              <span className="font-serif-display text-xl tracking-tight">ILuminate</span>
+              <span className={cn("font-serif-display text-xl tracking-tight", desktopCollapsed && "lg:hidden")}>ILuminate</span>
             </Link>
+            <button
+              className="hidden lg:inline-flex h-9 w-9 items-center justify-center rounded-full glass"
+              onClick={() => setDesktopCollapsed((value) => !value)}
+              aria-label={desktopCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {desktopCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
             <button
               className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-full glass"
               onClick={() => setOpen(false)}
@@ -62,16 +83,25 @@ export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; 
           </div>
 
           <nav className="px-4 py-6 space-y-1">
-            <p className="px-3 mb-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-mono">Workspace</p>
+            <p
+              className={cn(
+                "px-3 mb-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground/60 font-mono",
+                desktopCollapsed && "lg:hidden"
+              )}
+            >
+              Workspace
+            </p>
             {nav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
                 onClick={() => setOpen(false)}
+                title={item.label}
                 className={({ isActive }) =>
                   cn(
                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
+                    desktopCollapsed && "lg:justify-center lg:px-2",
                     isActive
                       ? "bg-secondary/70 text-foreground shadow-card"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
@@ -87,31 +117,41 @@ export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; 
                           ? "border-primary/40 bg-primary/10 text-primary"
                           : "border-border/60 bg-background/40 text-muted-foreground group-hover:text-foreground"
                       )}
-                    >
+                        >
                       <item.icon className="h-4 w-4" />
                     </span>
-                    <span className="font-medium">{item.label}</span>
-                    {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-glow-sm" />}
+                    <span className={cn("font-medium", desktopCollapsed && "lg:hidden")}>{item.label}</span>
+                    {isActive && <span className={cn("ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-glow-sm", desktopCollapsed && "lg:hidden")} />}
                   </>
                 )}
               </NavLink>
             ))}
           </nav>
 
-          <div className="absolute inset-x-4 bottom-6">
-            <div className="rounded-2xl glass-card p-4">
+          <div className={cn("absolute inset-x-4 bottom-6", desktopCollapsed && "lg:inset-x-2")}>
+            <div className={cn("rounded-2xl glass-card p-4", desktopCollapsed && "lg:p-3")}>
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-amber text-primary-foreground text-xs font-mono">
                   {connected ? "EQ" : "--"}
                 </div>
-                <div className="min-w-0">
+                <div className={cn("min-w-0", desktopCollapsed && "lg:hidden")}>
                   <div className="text-xs text-muted-foreground">{connected ? "Connected" : "Not connected"}</div>
                   <div className="font-mono text-xs truncate">{connected ? shortAddress : "Connect wallet"}</div>
                 </div>
               </div>
-              <Button variant="glass" size="sm" className="mt-3 w-full" asChild>
+              <Button variant="glass" size="sm" className={cn("mt-3 w-full", desktopCollapsed && "lg:hidden")} asChild>
                 <Link to="/">
                   Back to site <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+              <Button
+                variant="glass"
+                size="icon"
+                className={cn("mt-3 hidden w-full", desktopCollapsed ? "lg:inline-flex" : "lg:hidden")}
+                asChild
+              >
+                <Link to="/">
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </Button>
             </div>
@@ -119,7 +159,7 @@ export const AppLayout = ({ children, title, subtitle }: { children: ReactNode; 
         </aside>
 
         {/* Main */}
-        <div className="flex-1 lg:pl-72">
+        <div className={cn("flex-1 transition-[padding] duration-300", desktopCollapsed ? "lg:pl-20" : "lg:pl-72")}>
           {/* Top bar */}
           <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/60 bg-background/70 px-4 sm:px-8 backdrop-blur-xl">
             <button

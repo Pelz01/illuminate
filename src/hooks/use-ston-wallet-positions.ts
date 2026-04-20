@@ -180,6 +180,22 @@ export const useStonWalletPositions = (walletAddress?: string) => {
             : assetsByAddress.get(normalizeAddress(pool.token1Address));
         const token0PriceUsd = getAssetPriceUsd(token0Asset);
         const token1PriceUsd = getAssetPriceUsd(token1Asset);
+        const token0BalanceUnits =
+          pool.token0Balance !== undefined
+            ? toDisplayUnits(pool.token0Balance, token0Asset?.decimals)
+            : null;
+        const token1BalanceUnits =
+          pool.token1Balance !== undefined
+            ? toDisplayUnits(pool.token1Balance, token1Asset?.decimals)
+            : null;
+        const valueFromTokenBalancesUsd =
+          token0PriceUsd !== null &&
+          token1PriceUsd !== null &&
+          (token0BalanceUnits !== null || token1BalanceUnits !== null)
+            ? (token0BalanceUnits ?? 0) * token0PriceUsd +
+              (token1BalanceUnits ?? 0) * token1PriceUsd
+            : null;
+        const effectiveValueUsd = valueUsd ?? valueFromTokenBalancesUsd;
 
         const holdValueUsd =
           flow &&
@@ -188,8 +204,8 @@ export const useStonWalletPositions = (walletAddress?: string) => {
             ? flow.token0 * token0PriceUsd + flow.token1 * token1PriceUsd
             : null;
         const netVsHoldUsd =
-          valueUsd !== null && holdValueUsd !== null
-            ? valueUsd - holdValueUsd
+          effectiveValueUsd !== null && holdValueUsd !== null
+            ? effectiveValueUsd - holdValueUsd
             : null;
 
         return {
@@ -198,7 +214,7 @@ export const useStonWalletPositions = (walletAddress?: string) => {
           token0Symbol,
           token1Symbol,
           apyPct,
-          valueUsd,
+          valueUsd: effectiveValueUsd,
           holdValueUsd,
           netVsHoldUsd,
           attributionOpsCount: opCountByPool.get(poolKey) ?? 0,

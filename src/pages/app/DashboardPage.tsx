@@ -26,6 +26,11 @@ const DashboardPage = () => {
 
   const hasPortfolioValue = positionsWithValue.length > 0;
   const hasNetVsHold = positionsWithNetVsHold.length > 0;
+  const portfolioValueDisplay = hasPortfolioValue
+    ? fmt(totalValue)
+    : connected && !isLoading
+    ? "$0"
+    : "Unavailable";
   const portfolioSub = !connected
     ? "Connect wallet to load live data"
     : isLoading
@@ -78,13 +83,7 @@ const DashboardPage = () => {
       <div className="grid gap-4 md:grid-cols-4">
         <KPI
           label="Portfolio value"
-          value={
-            hasPortfolioValue
-              ? fmt(totalValue)
-              : connected && !isLoading
-              ? "Coming soon"
-              : "Unavailable"
-          }
+          value={portfolioValueDisplay}
           sub={portfolioSub}
           tone="neutral"
         />
