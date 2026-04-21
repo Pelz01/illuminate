@@ -90,6 +90,7 @@ No required environment variables for basic local run.
 
 Optional:
 - `VITE_TON_CONNECT_MANIFEST_URL`
+- `VITE_POLLINATIONS_API_KEY`
 
 If not set:
 - In HTTPS environments, app uses `https://<your-domain>/tonconnect-manifest.json`
@@ -102,6 +103,14 @@ VITE_TON_CONNECT_MANIFEST_URL=https://your-domain/tonconnect-manifest.json
 ```
 
 And ensure that manifest is reachable over HTTPS.
+
+To enable streamed AI rebalance recommendations in the app:
+
+```env
+VITE_POLLINATIONS_API_KEY=pk_or_sk_key_here
+```
+
+Use `pk_` only for client-side testing and demos. Never expose `sk_` in public clients.
 
 ## Scripts
 

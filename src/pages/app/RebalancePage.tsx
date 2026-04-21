@@ -3,10 +3,87 @@ import { Button } from "@/components/ui/button";
 import { Zap, ShieldCheck, Route } from "lucide-react";
 import { useTonWalletSession } from "@/hooks/use-ton-wallet-session";
 import { useStonWalletPositions } from "@/hooks/use-ston-wallet-positions";
+import { useEffect, useRef, useState } from "react";
+import { streamPollinationsChat } from "@/lib/pollinations";
 
 const RebalancePage = () => {
   const { connected, address, connect } = useTonWalletSession();
   const { data: positions = [], isLoading } = useStonWalletPositions(address);
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const handleGenerateSummary = async () => {
+    const apiKey = (import.meta.env.VITE_POLLINATIONS_API_KEY as string | undefined) ?? "";
+    if (!apiKey) {
+      setAiError("Set VITE_POLLINATIONS_API_KEY to enable streamed recommendations.");
+      return;
+    }
+
+    if (!connected || !positions.length) {
+      setAiError("Connect wallet and load at least one LP position first.");
+      return;
+    }
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setAiSummary("");
+    setAiError("");
+    setIsStreaming(true);
+
+    try {
+      const positionContext = positions
+        .slice(0, 12)
+        .map((position) => {
+          const value = position.valueUsd === null ? "Unavailable" : `$${position.valueUsd.toFixed(2)}`;
+          const net = position.netVsHoldUsd === null ? "Unavailable" : `$${position.netVsHoldUsd.toFixed(2)}`;
+          const apy = position.apyPct === null ? "Unavailable" : `${position.apyPct.toFixed(2)}%`;
+          return `${position.pair} | Value: ${value} | APY: ${apy} | Net vs hold: ${net}`;
+        })
+        .join("\n");
+
+      await streamPollinationsChat({
+        apiKey,
+        model: "openai",
+        signal: controller.signal,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a concise DeFi LP assistant for TON and STON.fi. Use plain language. Avoid hype. If data is missing, say it clearly.",
+          },
+          {
+            role: "user",
+            content: `Create a short rebalance recommendation from these live wallet LP positions.\n\nWallet positions:\n${positionContext}\n\nReturn:\n1) Current risk snapshot\n2) Best next action\n3) What data is still missing`,
+          },
+        ],
+        onToken: (_token, fullText) => {
+          setAiSummary(fullText);
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to stream recommendation.";
+      if (controller.signal.aborted) {
+        setAiError("Generation stopped.");
+      } else {
+        setAiError(message);
+      }
+    } finally {
+      setIsStreaming(false);
+      abortRef.current = null;
+    }
+  };
+
+  const handleStopSummary = () => {
+    abortRef.current?.abort();
+  };
 
   return (
     <AppLayout
@@ -58,6 +135,36 @@ const RebalancePage = () => {
                 <p className="mt-4 text-sm text-muted-foreground">
                   Rebalance execution stays disabled until live IL and fee attribution produce an actual recommendation.
                 </p>
+
+                <div className="mt-5 rounded-xl border border-border/60 bg-background/40 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-mono">
+                    AI recommendation
+                  </div>
+                  <div className="mt-2 min-h-24 whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
+                    {aiSummary || "Generate a streamed recommendation from your current LP positions."}
+                  </div>
+                  {aiError && (
+                    <p className="mt-3 text-xs text-destructive">{aiError}</p>
+                  )}
+                  <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="glass"
+                      size="sm"
+                      onClick={handleGenerateSummary}
+                      disabled={isStreaming}
+                    >
+                      Stream recommendation
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleStopSummary}
+                      disabled={!isStreaming}
+                    >
+                      Stop stream
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
